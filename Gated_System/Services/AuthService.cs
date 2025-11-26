@@ -127,16 +127,11 @@ namespace Gated_System.Services
             if (dto.BuilderId <= 0)
                 throw new ApplicationException("BuilderId is required.");
 
-            var property = new PropertyCreateModel
-            {
-                PropertyName = dto.PropertyName,
-                Address = dto.Address,
-                City = dto.City,
-                Pincode = dto.Pincode,
-                BuilderId = dto.BuilderId
-            };
+            if (dto.Buildings != null && dto.Buildings.Any(b => string.IsNullOrWhiteSpace(b)))
+                throw new ApplicationException("All building names must be non-empty.");
 
-            var id = await _repo.CreatePropertyAsync(property);
+            // Call repository that performs both operations inside a transaction
+            var id = await _repo.CreatePropertyAsync(dto);
             return id;
         }
     }

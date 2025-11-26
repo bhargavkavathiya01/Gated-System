@@ -70,7 +70,9 @@ namespace Gated_System.Controllers
                         address = dto.Address,
                         city = dto.City,
                         pincode = dto.Pincode,
-                        builderid = dto.BuilderId
+                        builderid = dto.BuilderId,
+                        buildingCount = dto.Buildings?.Count ?? 0,
+                        buildings = dto.Buildings
                     }
                 });
             }

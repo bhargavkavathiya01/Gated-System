@@ -719,58 +719,149 @@ namespace Gated_System.Repositories
             }
         }
 
+        //public async Task<int> CreatePropertyAsync(PropertyCreateModel property)
+        //{
+        //    const string query = @"SELECT public.sp_api_propertymaster(@p_operation, @p_json)::text;";
+
+        //    var payload = new
+        //    {
+        //        propertyname = property.PropertyName,
+        //        address = property.Address,
+        //        city = property.City,
+        //        pincode = property.Pincode,
+        //        builderid = property.BuilderId
+        //    };
+
+        //    var jsonPayload = JsonSerializer.Serialize(payload);
+
+        //    await _connection.OpenAsync();
+        //    try
+        //    {
+        //        using var cmd = new NpgsqlCommand(query, _connection);
+        //        cmd.Parameters.AddWithValue("p_operation", 2); // 2 = insert
+        //        cmd.Parameters.AddWithValue("p_json", (object)jsonPayload ?? DBNull.Value);
+
+        //        var scalarResult = await cmd.ExecuteScalarAsync();
+
+        //        if (scalarResult is null || scalarResult is DBNull)
+        //            throw new Exception("sp_api_propertymaster returned null/empty result.");
+
+        //        var resultJson = scalarResult.ToString();
+
+        //        // Expected: {"status_code":201,"message":"Property created","data":{"id":X}}
+        //        using var doc = JsonDocument.Parse(resultJson!);
+        //        var root = doc.RootElement;
+
+        //        var statusCode = root.GetProperty("status_code").GetInt32();
+        //        if (statusCode != 201)
+        //        {
+        //            var message = root.GetProperty("message").GetString();
+        //            throw new ApplicationException(
+        //                $"Property insert failed. Status: {statusCode}, Message: {message}");
+        //        }
+
+        //        var id = root
+        //            .GetProperty("data")
+        //            .GetProperty("id")
+        //            .GetInt32();
+
+        //        return id;
+        //    }
+        //    finally
+        //    {
+        //        await _connection.CloseAsync();
+        //    }
+        //}
         public async Task<int> CreatePropertyAsync(PropertyCreateModel property)
         {
-            const string query = @"SELECT public.sp_api_propertymaster(@p_operation, @p_json)::text;";
-
-            var payload = new
-            {
-                propertyname = property.PropertyName,
-                address = property.Address,
-                city = property.City,
-                pincode = property.Pincode,
-                builderid = property.BuilderId
-            };
-
-            var jsonPayload = JsonSerializer.Serialize(payload);
+            const string spQuery = @"SELECT public.sp_api_propertymaster(@p_operation, @p_json)::text;";
+            const string spBuildingQuery = @"SELECT public.sp_api_buildingmaster(@p_operation, @p_json)::text;";
 
             await _connection.OpenAsync();
+            using var tx = await _connection.BeginTransactionAsync();
             try
             {
-                using var cmd = new NpgsqlCommand(query, _connection);
-                cmd.Parameters.AddWithValue("p_operation", 2); // 2 = insert
-                cmd.Parameters.AddWithValue("p_json", (object)jsonPayload ?? DBNull.Value);
-
-                var scalarResult = await cmd.ExecuteScalarAsync();
-
-                if (scalarResult is null || scalarResult is DBNull)
-                    throw new Exception("sp_api_propertymaster returned null/empty result.");
-
-                var resultJson = scalarResult.ToString();
-
-                // Expected: {"status_code":201,"message":"Property created","data":{"id":X}}
-                using var doc = JsonDocument.Parse(resultJson!);
-                var root = doc.RootElement;
-
-                var statusCode = root.GetProperty("status_code").GetInt32();
-                if (statusCode != 201)
+                // 1) Insert property
+                var propPayload = new
                 {
-                    var message = root.GetProperty("message").GetString();
-                    throw new ApplicationException(
-                        $"Property insert failed. Status: {statusCode}, Message: {message}");
+                    propertyname = property.PropertyName,
+                    address = property.Address,
+                    city = property.City,
+                    pincode = property.Pincode,
+                    builderid = property.BuilderId
+                };
+                var propJson = JsonSerializer.Serialize(propPayload);
+
+                using (var cmd = new NpgsqlCommand(spQuery, _connection, tx))
+                {
+                    cmd.Parameters.AddWithValue("p_operation", 2); // insert
+                    cmd.Parameters.AddWithValue("p_json", (object)propJson ?? DBNull.Value);
+
+                    var scalarResult = await cmd.ExecuteScalarAsync();
+                    if (scalarResult is null || scalarResult is DBNull)
+                        throw new Exception("sp_api_propertymaster returned null/empty result.");
+
+                    var resultJson = scalarResult.ToString()!;
+                    using var doc = JsonDocument.Parse(resultJson);
+                    var root = doc.RootElement;
+
+                    var statusCode = root.GetProperty("status_code").GetInt32();
+                    if (statusCode != 201)
+                    {
+                        var message = root.GetProperty("message").GetString();
+                        throw new ApplicationException($"Property insert failed. Status: {statusCode}, Message: {message}");
+                    }
+
+                    var id = root.GetProperty("data").GetProperty("id").GetInt32();
+
+                    // 2) Insert buildings if any
+                    if (property.Buildings != null && property.Buildings.Count > 0)
+                    {
+                        // create building objects array
+                        var buildingsArray = property.Buildings.Select(b => new { buildingname = b }).ToArray();
+                        var buildingPayload = new
+                        {
+                            propertyid = id,
+                            buildings = buildingsArray
+                        };
+
+                        var buildingJson = JsonSerializer.Serialize(buildingPayload);
+
+                        using var bcmd = new NpgsqlCommand(spBuildingQuery, _connection, tx);
+                        bcmd.Parameters.AddWithValue("p_operation", 2); // insert
+                        bcmd.Parameters.AddWithValue("p_json", (object)buildingJson ?? DBNull.Value);
+
+                        var bScalar = await bcmd.ExecuteScalarAsync();
+                        if (bScalar is null || bScalar is DBNull)
+                            throw new Exception("sp_api_buildingmaster returned null/empty result.");
+
+                        var bResultJson = bScalar.ToString()!;
+                        using var bDoc = JsonDocument.Parse(bResultJson);
+                        var bRoot = bDoc.RootElement;
+                        var bStatus = bRoot.GetProperty("status_code").GetInt32();
+                        if (bStatus != 201)
+                        {
+                            var bMessage = bRoot.GetProperty("message").GetString();
+                            throw new ApplicationException($"Building insert failed. Status: {bStatus}, Message: {bMessage}");
+                        }
+                        // optionally you can read inserted ids from bRoot.GetProperty("data") if proc returns them
+                    }
+
+                    // commit
+                    await tx.CommitAsync();
+                    return id;
                 }
-
-                var id = root
-                    .GetProperty("data")
-                    .GetProperty("id")
-                    .GetInt32();
-
-                return id;
+            }
+            catch
+            {
+                try { await tx.RollbackAsync(); } catch { /* swallow */ }
+                throw;
             }
             finally
             {
                 await _connection.CloseAsync();
             }
         }
+
     }
 }

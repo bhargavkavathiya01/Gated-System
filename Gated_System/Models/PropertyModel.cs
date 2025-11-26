@@ -19,6 +19,8 @@
         public string? Address { get; set; }
         public string? City { get; set; }
         public string? Pincode { get; set; }
-        public int BuilderId { get; set; }          
+        public int BuilderId { get; set; }
+        public int buildingCount { get; set; }
+        public List<string> Buildings { get; set; } = new List<string>();
     }
 }
