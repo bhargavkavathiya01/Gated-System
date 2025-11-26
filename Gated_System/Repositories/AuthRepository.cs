@@ -4,11 +4,11 @@ using System.Text.Json;
 
 namespace Gated_System.Repositories
 {
-    public class UserRepository :IUserRepository
+    public class AuthRepository :IAuthRepository
     {
         private readonly NpgsqlConnection _connection;
 
-        public UserRepository(NpgsqlConnection connection)
+        public AuthRepository(NpgsqlConnection connection)
         {
             _connection = connection;
         }

@@ -7,12 +7,12 @@ namespace Gated_System.Services
 {
     public class AuthService : IAuthService
     {
-        private readonly IUserRepository _repo;
+        private readonly IAuthRepository _repo;
         private readonly PasswordHasher _hasher;
         private readonly JwtTokenGenerator _jwt;
         private readonly JwtOptions _jwtOptions;
 
-        public AuthService(IUserRepository repo, PasswordHasher hasher, JwtTokenGenerator jwt, IOptions<JwtOptions> jwtOptions)
+        public AuthService(IAuthRepository repo, PasswordHasher hasher, JwtTokenGenerator jwt, IOptions<JwtOptions> jwtOptions)
         {
             _repo = repo;
             _hasher = hasher;

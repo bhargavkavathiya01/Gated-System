@@ -4,7 +4,7 @@ using System.Threading.Tasks;
 
 namespace Gated_System.Repositories
 {
-    public interface IUserRepository
+    public interface IAuthRepository
     {
         Task<UserModel?> GetByEmailAsync(string email);
         Task<UserModel?> AuthenticateAsync(string email, string password);

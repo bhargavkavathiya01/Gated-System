@@ -8,9 +8,9 @@ namespace Gated_System.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IUserRepository _repo;
+        private readonly IAuthRepository _repo;
 
-        public UserController(IUserRepository repo) => _repo = repo;
+        public UserController(IAuthRepository repo) => _repo = repo;
 
         [HttpGet("me")]
         public async Task<IActionResult> Me()
