@@ -69,7 +69,7 @@ namespace Gated_System.Services
 
         public async Task<AuthResponseModel?> LoginAsync(LoginModel dto)
         {
-            var user = await _repo.AuthenticateAsync(dto.Email,dto.Password);
+            var user = await _repo.AuthenticateAsync(dto.Phone,dto.Password);
             if (user == null) return null;
             //if (!_hasher.Verify(dto.Password, user.PasswordHash, user.PasswordSalt)) return null;
 

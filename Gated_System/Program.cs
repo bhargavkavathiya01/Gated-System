@@ -292,6 +292,8 @@ builder.Services.AddScoped<JwtTokenGenerator>();
 // Repositories & Services
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IBuilderService, BuilderService>();
+builder.Services.AddScoped<IBuilderRepository, BuilderRepository>();
 
 // CORS
 builder.Services.AddCors(options =>

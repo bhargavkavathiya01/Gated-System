@@ -1,4 +1,5 @@
-﻿using Gated_System.Models;
+﻿using Gated_System.Helpers;
+using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -20,15 +21,16 @@ namespace Gated_System.Controllers
             try
             {
                 var res = await _auth.RegisterAsync(dto);
-                return Ok(new
-                {
-                    message = "User registered Successfully",
-                    data = res
-                });
+                return Ok(ApiResponse.Success("User registered successfully", res));
+                //return Ok(new
+                //{
+                //    message = "User registered Successfully",
+                //    data = res
+                //});
             }
             catch (ApplicationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.Fail(ex.Message));
             }
         }
 
@@ -36,20 +38,17 @@ namespace Gated_System.Controllers
         public async Task<IActionResult> Login([FromBody] LoginModel dto)
         {
             var res = await _auth.LoginAsync(dto);
-            if (res == null) return Unauthorized(new { message = "Invalid credentials" });
-            return Ok(new
-            {
-                message = "User Login Successfully",
-                data = res
-            });
+            if (res == null) return Unauthorized(ApiResponse.Fail("Invalid credentials"));
+            return Ok(ApiResponse.Success("User login successful", res));
         }
 
         [HttpPost("refresh")]
-        public async Task<IActionResult> Refresh([FromBody] string refreshToken)
+        public async Task<IActionResult> Refresh([FromBody] RefreshTokenModel dto)
         {
-            var res = await _auth.RefreshAsync(refreshToken);
-            if (res == null) return Unauthorized();
-            return Ok(res);
+            var res = await _auth.RefreshAsync(dto.RefreshToken);
+            if (res == null)
+                return Unauthorized(ApiResponse.Fail("Invalid refresh token"));
+            return Ok(ApiResponse.Success("Token refreshed successfully", res));
         }
 
         [Authorize]
@@ -59,31 +58,27 @@ namespace Gated_System.Controllers
             try
             {
                 var id = await _auth.CreatePropertyAsync(dto);
-
-                return Ok(new
+                var returnData = new
                 {
-                    message = "Property created successfully",
-                    data = new
-                    {
-                        id,
-                        propertyname = dto.PropertyName,
-                        address = dto.Address,
-                        city = dto.City,
-                        pincode = dto.Pincode,
-                        builderid = dto.BuilderId,
-                        buildingCount = dto.Buildings?.Count ?? 0,
-                        buildings = dto.Buildings
-                    }
-                });
+                    id,
+                    propertyname = dto.PropertyName,
+                    address = dto.Address,
+                    city = dto.City,
+                    pincode = dto.Pincode,
+                    builderid = dto.BuilderId,
+                    buildingCount = dto.Buildings?.Count ?? 0,
+                    buildings = dto.Buildings
+                };
+                return Ok(ApiResponse.Success("Property created successfully", returnData));
             }
             catch (ApplicationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.Fail(ex.Message));
             }
             catch (Exception ex)
             {
                 // log ex if you have logger
-                return StatusCode(500, new { message = "Internal server error", detail = ex.Message });
+                return StatusCode(500, ApiResponse.Fail("Internal server error", new { detail = ex.Message }));
             }
         }
     }

@@ -164,11 +164,11 @@ namespace Gated_System.Repositories
             }
         }
 
-        public async Task<UserModel?> AuthenticateAsync(string email, string password)
+        public async Task<UserModel?> AuthenticateAsync(string phone, string password)
         {
             const string sql = @"SELECT public.sp_api_authenticateuser(@p_json)::text;";
 
-            var payload = new { email, password };
+            var payload = new { phone, password };
             var jsonPayload = JsonSerializer.Serialize(payload);
 
             await _connection.OpenAsync();

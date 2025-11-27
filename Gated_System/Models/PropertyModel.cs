@@ -23,4 +23,13 @@
         public int buildingCount { get; set; }
         public List<string> Buildings { get; set; } = new List<string>();
     }
+
+    public class CreateSecretaryModel
+    {
+        public int PropertyId { get; set; }
+        public int UserId { get; set; }  
+        public int RoleId { get; set; }
+        public int CreatedBy { get; set; } //Builder Id
+    }
+
 }
