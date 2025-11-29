@@ -19,14 +19,31 @@ namespace Gated_System.Services
             if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
             if (dto.RoleId <= 0) throw new ApplicationException("Invalid RoleId.");
 
-            // If you need additional business rules (e.g., check user belongs to builder), do them here.
-            // Then call repository to perform DB insertion.
             var id = await _repo.CreateSecretaryRepoAsync(dto);
+            return id;
+        }
 
-            // Optionally assign role if not handled by SP:
-            // await _repo.AssignRoleAsync(id, dto.RoleId);
+        public async Task<int> CreateFlatOwnerAsync(CreateFlatOwnerModel dto)
+        {
+            // Basic validation
+            if (dto.PropertyId <= 0) throw new ApplicationException("Invalid PropertyId.");
+            if (dto.BuildingId <= 0) throw new ApplicationException("Invalid BuildingId.");
+            if (dto.FlatNo <= 0) throw new ApplicationException("Invalid FlatNo.");
+            if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
+            if (dto.RoleId <= 0) throw new ApplicationException("Invalid RoleId.");
+
+            var id = await _repo.CreateFlatOwnerRepoAsync(dto);
 
             return id;
         }
+
+        public async Task<IEnumerable<PropertyViewModel>> GetPropertiesByBuilderIdAsync(int builderId)
+        {
+            if (builderId <= 0)
+                throw new ApplicationException("Invalid builderId.");
+
+            return await _repo.GetPropertiesByBuilderIdAsync(builderId);
+        }
+
     }
 }

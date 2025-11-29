@@ -294,6 +294,8 @@ builder.Services.AddScoped<IAuthRepository, AuthRepository>();
 builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IBuilderService, BuilderService>();
 builder.Services.AddScoped<IBuilderRepository, BuilderRepository>();
+builder.Services.AddScoped<ISuperAdminService, SuperAdminService>();
+builder.Services.AddScoped<ISuperAdminRepository, SuperAdminRepository>();
 
 // CORS
 builder.Services.AddCors(options =>

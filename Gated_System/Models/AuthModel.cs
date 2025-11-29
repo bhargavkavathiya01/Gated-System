@@ -8,4 +8,12 @@
         public IEnumerable<UserPropertyRole>? Data { get; set; }
     }
 
+    public class UpdatePropertyVerificationModel
+    {
+        public int PropertyId { get; set; }
+        public string IsVerified { get; set; } = ""; // e.g. "Approved" / "Pending" / "Rejected"
+        public int? ModifiedBy { get; set; }
+    }
+
+
 }
