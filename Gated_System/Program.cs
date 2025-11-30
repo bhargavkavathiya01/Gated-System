@@ -296,6 +296,10 @@ builder.Services.AddScoped<IBuilderService, BuilderService>();
 builder.Services.AddScoped<IBuilderRepository, BuilderRepository>();
 builder.Services.AddScoped<ISuperAdminService, SuperAdminService>();
 builder.Services.AddScoped<ISuperAdminRepository, SuperAdminRepository>();
+builder.Services.AddScoped<IFlatOwnerRepository, FlatOwnerRepository>();
+builder.Services.AddScoped<IFlatOwnerService, FlatOwnerService>();
+builder.Services.AddScoped<ISecurityRepository, SecurityRepository>();
+builder.Services.AddScoped<ISecurityService, SecurityService>();
 
 // CORS
 builder.Services.AddCors(options =>

@@ -1,31 +1,35 @@
 ﻿using Gated_System.Models;
 using Gated_System.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gated_System.Controllers
 {
-    [Authorize(Roles = "Builder")]
     [Route("api/[controller]")]
     [ApiController]
-    public class BuilderController : ControllerBase
+    public class FlatOwnerController : ControllerBase
     {
-        private readonly IBuilderService _service;
+        private readonly IFlatOwnerService _service;
 
-        public BuilderController(IBuilderService service) => _service = service;
+        public FlatOwnerController(IFlatOwnerService service) => _service = service;
 
-        [HttpPost("createsecretary")]
-        public async Task<IActionResult> CreateSecretary([FromBody] CreateSecretaryModel dto)
+        [HttpPost("invitevisitor")]
+        public async Task<IActionResult> CreateVisitor([FromBody] CreateVisitorDto dto)
         {
             try
             {
-                var resultId = await _service.CreateSecretaryAsync(dto);
+                var result = await _service.CreateVisitorAsync(dto);
                 return Ok(new
                 {
                     status = true,
-                    message = "Secretary created successfully",
-                    data = new { id = resultId }
+                    message = "Visitor created successfully",
+                    data = new
+                    {
+                        id = result.Id,
+                        qrcode = result.QrToken,
+                        qrImageBase64 = result.QrImageBase64,
+                        expiry = result.ExpiryUtc
+                    }
                 });
             }
             catch (ApplicationException ex)
@@ -34,23 +38,19 @@ namespace Gated_System.Controllers
             }
             catch (Exception ex)
             {
-                // consider logging ex
                 return StatusCode(500, new { message = "An error occurred", details = ex.Message });
             }
         }
 
-        [HttpPost("createflatowner")]
-        public async Task<IActionResult> CreateFlatOwner([FromBody] CreateFlatOwnerModel dto)
+        [HttpGet("visitor/{id:int}")]
+        public async Task<IActionResult> GetVisitorById(int id)
         {
             try
             {
-                var resultId = await _service.CreateFlatOwnerAsync(dto);
-                return Ok(new
-                {
-                    status = true,
-                    message = "Flat Owner created successfully",
-                    data = new { id = resultId }
-                });
+                var dto = await _service.GetVisitorByIdAsync(id);
+                if (dto == null) return NotFound(new { message = "Visitor not found" });
+
+                return Ok(new { status = true, message = "Visitor fetched", data = dto });
             }
             catch (ApplicationException ex)
             {
@@ -58,25 +58,21 @@ namespace Gated_System.Controllers
             }
             catch (Exception ex)
             {
-                // consider logging ex
                 return StatusCode(500, new { message = "An error occurred", details = ex.Message });
             }
         }
 
-        [HttpGet("propertiesbybuilder/{builderId:int}")]
-        public async Task<IActionResult> GetPropertiesByBuilder(int builderId)
+        [HttpPost("createpg")]
+        public async Task<IActionResult> CreatePGMembers([FromBody] CreateFlatOwnerModel dto)
         {
             try
             {
-                var properties = await _service.GetPropertiesByBuilderIdAsync(builderId);
-
+                var resultId = await _service.CreatePGMembers(dto);
                 return Ok(new
                 {
                     status = true,
-                    message = properties != null && properties.Any()
-                        ? "Properties fetched successfully"
-                        : "No properties found for given builder",
-                    data = properties
+                    message = "PG created successfully",
+                    data = new { id = resultId }
                 });
             }
             catch (ApplicationException ex)
