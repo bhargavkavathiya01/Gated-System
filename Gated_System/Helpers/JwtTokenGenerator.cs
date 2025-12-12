@@ -35,7 +35,8 @@ namespace Gated_System.Helpers
             var claims = new List<Claim>
             {
                 new Claim(JwtRegisteredClaimNames.Sub, userId.ToString()),
-                new Claim(JwtRegisteredClaimNames.Email, email)
+                new Claim(JwtRegisteredClaimNames.Email, email),
+                new Claim("userId", userId.ToString()),
             };
 
             //claims.AddRange(roles.Select(r => new Claim(ClaimTypes.Role, r)));

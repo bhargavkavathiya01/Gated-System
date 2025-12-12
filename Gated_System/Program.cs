@@ -172,6 +172,7 @@
 
 
 using Gated_System.Helpers;
+//using Gated_System.Hub;
 using Gated_System.Repositories;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -300,6 +301,8 @@ builder.Services.AddScoped<IFlatOwnerRepository, FlatOwnerRepository>();
 builder.Services.AddScoped<IFlatOwnerService, FlatOwnerService>();
 builder.Services.AddScoped<ISecurityRepository, SecurityRepository>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
+builder.Services.AddScoped<IChatRepository, ChatRepository>();
+builder.Services.AddScoped<IChatService, ChatService>();
 
 // CORS
 builder.Services.AddCors(options =>
@@ -307,6 +310,8 @@ builder.Services.AddCors(options =>
     options.AddPolicy("AllowAll", b =>
         b.AllowAnyOrigin().AllowAnyHeader().AllowAnyMethod());
 });
+
+builder.Services.AddSignalR();
 
 builder.Services.AddAuthorization();
 
@@ -341,6 +346,8 @@ app.UseHttpsRedirection();
 
 app.UseAuthentication();
 app.UseAuthorization();
+
+app.MapHub<ChatHub>("/hub/chat");
 
 app.MapControllers();
 
