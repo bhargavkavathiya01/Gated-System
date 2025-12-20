@@ -1,4 +1,5 @@
-﻿using Gated_System.Models;
+﻿using Gated_System.Helpers;
+using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Http.HttpResults;
@@ -23,11 +24,11 @@ namespace Gated_System.Controllers
             // If CreatedBy not provided, set from JWT
             if (request.CreatedBy <= 0)
             {
-                var userIdClaim = User.FindFirst("userId")?.Value;
-                if (string.IsNullOrEmpty(userIdClaim))
-                    return Unauthorized("UserId claim missing");
+                var userid = GetCurrentUserId();
+                if (userid == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
 
-                request.CreatedBy = int.Parse(userIdClaim);
+                request.CreatedBy = userid;
             }
 
             var chatId = await _chatService.GetOrCreateChatAsync(request);
@@ -43,7 +44,7 @@ namespace Gated_System.Controllers
         [HttpPost("getmessages")]
         public async Task<IActionResult> GetMessages(GetMessagesRequest request)
         {
-            if (request.ChatId <= 0) return BadRequest("Invalid chatId");
+            if (request.ChatId <= 0) return BadRequest(ApiResponse.Fail("Invalid ChatId"));
 
             var messages = await _chatService.GetMessagesAsync(request);
             //return Ok(new GetMessagesResponse
@@ -68,7 +69,7 @@ namespace Gated_System.Controllers
         {
             var userId = request.UserId;
             if (userId <= 0)
-                return Unauthorized("UserId missing");
+                return Unauthorized(ApiResponse.Fail("UserId missing"));
 
             var chats = await _chatService.GetUserChatsAsync(request);
             return Ok(new
@@ -83,7 +84,10 @@ namespace Gated_System.Controllers
         public async Task<IActionResult> CreatePoll(int chatId, [FromBody] ChatPollCreateModel model)
         {
             var userId = GetCurrentUserId();
-            if (model == null) return BadRequest("Invalid payload");
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+            if (model == null) return BadRequest(ApiResponse.Fail("Invalid payload"));
             model.ChatId = chatId;
 
             try
@@ -120,6 +124,9 @@ namespace Gated_System.Controllers
         public async Task<IActionResult> GetPolls(int chatId)
         {
             var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
             var polls = await _chatService.GetPollsForChatAsync(chatId, userId);
             return Ok(new
             {
@@ -137,8 +144,11 @@ namespace Gated_System.Controllers
         public async Task<IActionResult> Vote(int pollId, [FromBody] ChatVoteRequest request)
         {
             var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
             if (request == null || request.OptionIds == null || !request.OptionIds.Any())
-                return BadRequest("optionIds required");
+                return BadRequest(ApiResponse.Fail("optionIds required"));
 
             try
             {
@@ -164,7 +174,13 @@ namespace Gated_System.Controllers
         private int GetCurrentUserId()
         {
             var idClaim = User.FindFirst("userId")?.Value;
-            if (string.IsNullOrEmpty(idClaim) || !int.TryParse(idClaim, out var uid)) throw new UnauthorizedAccessException("Invalid userId claim");
+
+            if (string.IsNullOrEmpty(idClaim))
+                return -1;
+
+            if (!int.TryParse(idClaim, out var uid))
+                return -1;
+
             return uid;
         }
 
@@ -176,6 +192,8 @@ namespace Gated_System.Controllers
         public async Task<IActionResult> ClosePoll(int pollId)
         {
             var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
             try
             {
                 // TODO: check permission (creator or admin)

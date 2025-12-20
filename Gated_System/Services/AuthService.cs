@@ -67,11 +67,13 @@ namespace Gated_System.Services
             };
         }
 
-        public async Task<AuthResponseModel?> LoginAsync(LoginModel dto)
+        public async Task<ServiceResult<AuthResponseModel>> LoginAsync(LoginModel dto)
         {
-            var user = await _repo.AuthenticateAsync(dto.Phone,dto.Password);
-            if (user == null) return null;
+            var userResult = await _repo.AuthenticateAsync(dto.User, dto.Password);
+            if (!userResult.status)
+                return ServiceResult<AuthResponseModel>.Fail(userResult.Message);
             //if (!_hasher.Verify(dto.Password, user.PasswordHash, user.PasswordSalt)) return null;
+            var user = userResult.Data!;
 
             var roles = await _repo.GetRolesAsync(user.Id);
             var accessToken = _jwt.GenerateAccessToken(user.Id, user.Email, roles, out var accessExpiry);
@@ -80,16 +82,30 @@ namespace Gated_System.Services
 
             await _repo.SaveRefreshTokenAsync(user.Id, refreshToken, refreshExpiry);
 
-            return new AuthResponseModel
+            return ServiceResult<AuthResponseModel>.Success(new AuthResponseModel
             {
                 AccessToken = accessToken,
                 RefreshToken = refreshToken,
                 AccessTokenExpiresAt = accessExpiry,
-                Data= roles
+                UserData = user,
+                RoleData = roles
+            }, "Login successful");
+        }
+
+        public async Task<UserRoleResponseModel?> GetUserByToken(int UserId)
+        {
+            var user = await _repo.GetByIdAsync(UserId);
+            if (user == null) return null;
+            var roles = await _repo.GetRolesAsync(user.Id);
+
+            return new UserRoleResponseModel
+            {
+                UserData=user,
+                RoleData = roles
             };
         }
 
-        public async Task<AuthResponseModel?> RefreshAsync(string refreshToken)
+        public async Task<RefreshTokenResponseModel?> RefreshAsync(string refreshToken)
         {
             var r = await _repo.GetRefreshTokenAsync(refreshToken);
             if (r == null) return null;
@@ -110,7 +126,7 @@ namespace Gated_System.Services
             await _repo.DeleteRefreshTokenAsync(refreshToken);
             await _repo.SaveRefreshTokenAsync(Userid, newRefresh, newExpiry);
 
-            return new AuthResponseModel
+            return new RefreshTokenResponseModel
             {
                 AccessToken = accessToken,
                 RefreshToken = newRefresh,

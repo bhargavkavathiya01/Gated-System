@@ -7,8 +7,8 @@ namespace Gated_System.Repositories
     public interface IAuthRepository
     {
         Task<UserModel?> GetByEmailAsync(string email);
-        Task<UserModel?> AuthenticateAsync(string email, string password);
-        Task<UserModel?> GetByIdAsync(int id);
+        Task<ServiceResult<UserResponseModel>> AuthenticateAsync(string user, string password);
+        Task<UserResponseModel?> GetByIdAsync(int id);
         Task<int> CreateAsync(UserModel user);
         Task AssignRoleAsync(int userId, int roleId);
         Task<IEnumerable<UserPropertyRole>> GetRolesAsync(int userId);

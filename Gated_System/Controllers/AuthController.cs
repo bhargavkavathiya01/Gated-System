@@ -3,6 +3,7 @@ using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Gated_System.Controllers
@@ -15,18 +16,32 @@ namespace Gated_System.Controllers
 
         public AuthController(IAuthService auth) => _auth = auth;
 
+        private int GetCurrentUserId()
+        {
+            var idClaim = User.FindFirst("userId")?.Value;
+
+            if (string.IsNullOrEmpty(idClaim))
+                return -1;
+
+            if (!int.TryParse(idClaim, out var uid))
+                return -1;
+
+            return uid;
+        }
+
         [HttpPost("register")]
         public async Task<IActionResult> Register([FromBody] RegisterModel dto)
         {
             try
             {
                 var res = await _auth.RegisterAsync(dto);
-                return Ok(ApiResponse.Success("User registered successfully", res));
-                //return Ok(new
-                //{
-                //    message = "User registered Successfully",
-                //    data = res
-                //});
+                //return Ok(ApiResponse.Success("User registered successfully", res));
+                return Ok(new
+                {
+                    status = true,
+                    message = "User registered Successfully",
+                    data = res
+                });
             }
             catch (ApplicationException ex)
             {
@@ -38,8 +53,20 @@ namespace Gated_System.Controllers
         public async Task<IActionResult> Login([FromBody] LoginModel dto)
         {
             var res = await _auth.LoginAsync(dto);
-            if (res == null) return Unauthorized(ApiResponse.Fail("Invalid credentials"));
-            return Ok(ApiResponse.Success("User login successful", res));
+            if (!res.status) return Unauthorized(ApiResponse.Fail(res.Message));
+            return Ok(res);
+        }
+
+        [HttpGet("getuserbytoken")]
+        public async Task<IActionResult> GetUserDataByToken()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+            var res = await _auth.GetUserByToken(userId);
+            if (res == null) return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+            return Ok(ApiResponse.Success("User Fetched successful", res));
         }
 
         [HttpPost("refresh")]

@@ -164,11 +164,11 @@ namespace Gated_System.Repositories
             }
         }
 
-        public async Task<UserModel?> AuthenticateAsync(string phone, string password)
+        public async Task<ServiceResult<UserResponseModel>> AuthenticateAsync(string user, string password)
         {
             const string sql = @"SELECT public.sp_api_authenticateuser(@p_json)::text;";
 
-            var payload = new { phone, password };
+            var payload = new { user, password };
             var jsonPayload = JsonSerializer.Serialize(payload);
 
             await _connection.OpenAsync();
@@ -178,26 +178,36 @@ namespace Gated_System.Repositories
                 cmd.Parameters.AddWithValue("p_json", (object)jsonPayload);
 
                 var scalar = await cmd.ExecuteScalarAsync();
-                if (scalar is null || scalar is DBNull) return null;
+                if (scalar == null || scalar is DBNull)
+                    return ServiceResult<UserResponseModel>.Fail("Invalid phone or password");
 
                 var resultJson = scalar.ToString();
                 using var doc = JsonDocument.Parse(resultJson!);
                 var root = doc.RootElement;
 
                 var statusCode = root.GetProperty("status_code").GetInt32();
-                if (statusCode != 200) return null;
+                var message = root.GetProperty("message").GetString() ?? "Authentication failed";
+
+                if (statusCode != 200)
+                    return ServiceResult<UserResponseModel>.Fail(message);
 
                 var data = root.GetProperty("data");
 
-                return new UserModel
+                var userData = new UserResponseModel
                 {
                     Id = data.GetProperty("userid").GetInt32(),
                     Firstname = data.GetProperty("firstname").GetString() ?? "",
-                    Middlename = data.GetProperty("middlename").ValueKind == JsonValueKind.Null ? "" : data.GetProperty("middlename").GetString() ?? "",
+                    Middlename = data.GetProperty("middlename").ValueKind == JsonValueKind.Null
+                ? ""
+                : data.GetProperty("middlename").GetString() ?? "",
                     Lastname = data.GetProperty("lastname").GetString() ?? "",
                     Email = data.GetProperty("email").GetString() ?? "",
-                    Phone = data.GetProperty("phone").ValueKind == JsonValueKind.Null ? "" : data.GetProperty("phone").GetString() ?? ""
+                    Phone = data.GetProperty("phone").ValueKind == JsonValueKind.Null
+                ? ""
+                : data.GetProperty("phone").GetString() ?? ""
                 };
+
+                return ServiceResult<UserResponseModel>.Success(userData);
             }
             finally
             {
@@ -239,7 +249,7 @@ namespace Gated_System.Repositories
         //    }
         //}
 
-        public async Task<UserModel?> GetByIdAsync(int userId)
+        public async Task<UserResponseModel?> GetByIdAsync(int userId)
         {
             const string sql = @"SELECT public.sp_api_usermaster(@p_operation, @p_json)::text;";
 
@@ -300,7 +310,7 @@ namespace Gated_System.Repositories
                 }
 
                 // Map fields - adapt to your UserModel
-                var user = new UserModel
+                var user = new UserResponseModel
                 {
                     Id = SafeInt(item, "userid", SafeInt(item, "id")), // SP may use 'userid' or 'id'
                     Firstname = SafeString(item, "firstname"),

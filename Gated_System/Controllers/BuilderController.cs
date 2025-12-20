@@ -6,7 +6,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace Gated_System.Controllers
 {
-    [Authorize(Roles = "Builder")]
+    //[Authorize(Roles = "Builder")]
     [Route("api/[controller]")]
     [ApiController]
     public class BuilderController : ControllerBase

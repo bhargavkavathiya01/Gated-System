@@ -25,12 +25,13 @@ namespace Gated_System.Helpers
             _options = options.Value;
         }
 
-        public string GenerateAccessToken(int userId, string email, IEnumerable<UserPropertyRole> roles, out DateTime expiresAt)
+        public string GenerateAccessToken(int userId, string email, IEnumerable<UserPropertyRole> roles, out DateTime localExpiresAt)
         {
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_options.Key));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            expiresAt = DateTime.UtcNow.AddMinutes(_options.AccessTokenExpirationMinutes);
+            var expiresAt = DateTime.UtcNow.AddMinutes(_options.AccessTokenExpirationMinutes);
+            localExpiresAt = expiresAt.ToLocalTime();
 
             var claims = new List<Claim>
             {

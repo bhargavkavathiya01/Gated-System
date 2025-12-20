@@ -9,7 +9,7 @@ namespace Gated_System.Services
         private readonly ISecurityRepository _repo;
         public SecurityService(ISecurityRepository repo) => _repo = repo;
 
-        public async Task<object> VerifyQrAsync(VerifyQrRequest req)
+        public async Task<object> VerifyQrAsync(VerifyQrRequest req,int SecurityId)
         {
             if (req == null || string.IsNullOrWhiteSpace(req.QrToken))
                 throw new ApplicationException("QrToken required.");
@@ -42,7 +42,7 @@ namespace Gated_System.Services
             var logPayload = new
             {
                 visitorrequestid = visitorRequestId,
-                securityid = req.SecurityId,
+                securityid = SecurityId,
                 entrytime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
                 remarks = (string?)null
             };
@@ -61,7 +61,7 @@ namespace Gated_System.Services
             {
                 id = visitorRequestId,
                 status = "Approved",
-                modifiedby = req.SecurityId
+                modifiedby = SecurityId
             };
             using var updDoc = await _repo.UpdateVisitorRequestStatusRawAsync(updatePayload);
             var updRoot = updDoc.RootElement;

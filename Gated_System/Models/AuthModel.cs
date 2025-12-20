@@ -5,7 +5,21 @@
         public string AccessToken { get; set; } = "";
         public string RefreshToken { get; set; } = "";
         public DateTime AccessTokenExpiresAt { get; set; }
-        public IEnumerable<UserPropertyRole>? Data { get; set; }
+        public IEnumerable<UserPropertyRole>? RoleData { get; set; }
+        public UserResponseModel UserData { get; set; }
+    }
+
+    public class RefreshTokenResponseModel
+    {
+        public string AccessToken { get; set; } = "";
+        public string RefreshToken { get; set; } = "";
+        public DateTime AccessTokenExpiresAt { get; set; }
+    }
+
+    public class UserRoleResponseModel
+    {
+        public IEnumerable<UserPropertyRole>? RoleData { get; set; }
+        public UserResponseModel UserData { get; set; }
     }
 
     public class UpdatePropertyVerificationModel

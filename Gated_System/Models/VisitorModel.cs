@@ -25,7 +25,7 @@
     public class VerifyQrRequest
     {
         public string QrToken { get; set; } = "";
-        public int SecurityId { get; set; }
+        //public int SecurityId { get; set; }
     }
 
     public class CheckoutRequest
