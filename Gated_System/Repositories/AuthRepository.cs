@@ -41,7 +41,7 @@ namespace Gated_System.Repositories
                 var scalarResult = await cmd.ExecuteScalarAsync();
 
                 if (scalarResult is null || scalarResult is DBNull)
-                    throw new Exception("sp_api_usermaster returned null/empty result.");
+                    throw new Exception("User returned null/empty result.");
 
                 var resultJson = scalarResult.ToString();
 
@@ -277,7 +277,7 @@ namespace Gated_System.Repositories
                 if (statusCode == 404) return null;
                 if (statusCode != 200)
                 {
-                    var msg = root.TryGetProperty("message", out var m) ? m.GetString() : "Error from sp_api_usermaster";
+                    var msg = root.TryGetProperty("message", out var m) ? m.GetString() : "Error from User Data";
                     throw new ApplicationException(msg);
                 }
 

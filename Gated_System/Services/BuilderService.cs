@@ -12,6 +12,11 @@ namespace Gated_System.Services
             _repo = repo;
         }
 
+        public async Task<IEnumerable<RoleModel>> GetRolesAsync()
+        {
+            return await _repo.GetAllRolesAsync();
+        }
+
         public async Task<int> CreateSecretaryAsync(CreateSecretaryModel dto)
         {
             // Basic validation
@@ -45,5 +50,13 @@ namespace Gated_System.Services
             return await _repo.GetPropertiesByBuilderIdAsync(builderId);
         }
 
+        public async Task<List<UserListResponseModel>> GetAllUsersAsync()
+        {
+            return await _repo.GetAllUsersAsync();
+        }
+        public async Task<UserResponseModel?> GetUserByEmailOrPhoneAsync(string user)
+        {
+            return await _repo.GetUserByEmailOrPhoneAsync(user);
+        }
     }
 }

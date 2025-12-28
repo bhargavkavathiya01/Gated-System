@@ -303,6 +303,8 @@ builder.Services.AddScoped<ISecurityRepository, SecurityRepository>();
 builder.Services.AddScoped<ISecurityService, SecurityService>();
 builder.Services.AddScoped<IChatRepository, ChatRepository>();
 builder.Services.AddScoped<IChatService, ChatService>();
+builder.Services.AddScoped<ISecretoryService, SecretoryService>();
+builder.Services.AddScoped<ISecretoryRepository, SecretoryRepository>();
 
 // CORS
 builder.Services.AddCors(options =>

@@ -16,12 +16,28 @@
         public int CreatedBy { get; set; }
         public string GroupName { get; set; } 
     }
-    public class GetMessagesRequest
+    public class GetChatFeedRequest
     {
         public int ChatId { get; set; }
         public int Skip { get; set; } = 0;
         public int Take { get; set; } = 50;
     }
+
+    public class ChatFeedResponse
+    {
+        public int ChatId { get; set; }
+        public int Skip { get; set; }
+        public int Take { get; set; }
+        public List<object> Items { get; set; } = new();
+    }
+
+    public class ClosePollRealtimeRequest
+    {
+        public int ChatId { get; set; }
+        public int PollId { get; set; }
+        public int UserId { get; set; }
+    }
+
 
     public class GetMessagesResponse
     {
@@ -61,6 +77,17 @@
         public IEnumerable<string> Options { get; set; } = Array.Empty<string>();
     }
 
+    public class CreatePollRealtimeRequest
+    {
+        public int ChatId { get; set; }
+        public int UserId { get; set; }
+        public string Question { get; set; } = "";
+        public bool AllowsMultiple { get; set; }
+        public DateTime? ExpiresAt { get; set; }
+        public List<string> Options { get; set; } = new();
+    }
+
+
     public class ChatPollOptionCreateModel
     {
         public string OptionText { get; set; } = string.Empty;
@@ -73,6 +100,37 @@
         public int Sequence { get; set; }
         public int Votes { get; set; }
     }
+
+    public class ChatPollFeedModel
+    {
+        public int PollId { get; set; }
+        public int ChatId { get; set; }
+        public string Question { get; set; } = "";
+        public bool AllowsMultiple { get; set; }
+        public bool IsActive { get; set; }
+        public DateTime CreatedOn { get; set; }
+
+        public PollUserModel CreatedBy { get; set; } = new();
+        public List<int> CurrentUserVotes { get; set; } = new();
+        public List<PollOptionModel> Options { get; set; } = new();
+        public int TotalVotes { get; set; }
+    }
+
+    public class PollUserModel
+    {
+        public int UserId { get; set; }
+        public string Name { get; set; } = "";
+    }
+
+    public class PollOptionModel
+    {
+        public int OptionId { get; set; }
+        public string Text { get; set; } = "";
+        public int VoteCount { get; set; }
+        public bool VotedByMe { get; set; }
+        public List<PollUserModel> Voters { get; set; } = new();
+    }
+
 
     public class ChatPollViewModel
     {
@@ -90,6 +148,8 @@
 
     public class ChatVoteRequest
     {
+        public int ChatId { get; set; }
+        public int PollId { get; set; }
         public IEnumerable<int> OptionIds { get; set; } = Array.Empty<int>();
     }
 }

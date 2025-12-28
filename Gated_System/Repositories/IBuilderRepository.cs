@@ -7,5 +7,8 @@ namespace Gated_System.Repositories
         Task<int> CreateSecretaryRepoAsync(CreateSecretaryModel model);
         Task<int> CreateFlatOwnerRepoAsync(CreateFlatOwnerModel model);
         Task<IEnumerable<PropertyViewModel>> GetPropertiesByBuilderIdAsync(int builderId);
+        Task<IEnumerable<RoleModel>> GetAllRolesAsync();
+        Task<List<UserListResponseModel>> GetAllUsersAsync();
+        Task<UserResponseModel?> GetUserByEmailOrPhoneAsync(string user);
     }
 }

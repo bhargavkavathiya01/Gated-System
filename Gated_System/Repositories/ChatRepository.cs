@@ -78,7 +78,7 @@ namespace Gated_System.Repositories
         /// Get messages for a specific chat with paging.
         /// Uses sp_api_groupchatmessages with operation = 1.
         /// </summary>
-        public async Task<IEnumerable<ChatMessageModel>> GetMessagesAsync(GetMessagesRequest request)
+        public async Task<IEnumerable<ChatMessageModel>> GetMessagesAsync(GetChatFeedRequest request)
         {
             const string query = @"SELECT public.sp_api_groupchatmessages(@p_operation, @p_json)::text;";
 
@@ -500,6 +500,52 @@ namespace Gated_System.Repositories
             }
         }
 
+        public async Task<ChatPollFeedModel?> GetPollByPollIdAsync(int pollId, int userId)
+        {
+            const string sql = @"SELECT public.sp_api_chatpoll(@p_operation, @p_json)::text;";
+
+            var payload = new
+            {
+                pollid = pollId,
+                userid = userId
+            };
+
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(sql, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 5); // 🔹 get poll by id
+                cmd.Parameters.AddWithValue("p_json", jsonPayload);
+
+                var scalar = await cmd.ExecuteScalarAsync();
+                if (scalar is null || scalar is DBNull)
+                    return null;
+
+                var json = scalar.ToString();
+                if (string.IsNullOrWhiteSpace(json))
+                    return null;
+
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (root.GetProperty("status_code").GetInt32() != 200)
+                    return null;
+
+                var data = root.GetProperty("data");
+
+                return JsonSerializer.Deserialize<ChatPollFeedModel>(
+                    data.GetRawText(),
+                    new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                );
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
         public async Task ClosePollAsync(int pollId)
         {
             const string query = @"SELECT public.sp_api_chatpoll(@p_operation, @p_json)::text;";
@@ -566,5 +612,58 @@ namespace Gated_System.Repositories
             }
         }
 
+        public async Task<List<object>> GetChatFeedAsync(int chatId,int userId,int skip,int take)
+        {
+            const string sql = @"SELECT public.sp_api_getchatfeed(@p_operation, @p_json)::text;";
+
+            var payload = new
+            {
+                chatid = chatId,
+                userid = userId,
+                skip = skip,
+                take = take
+            };
+
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(sql, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 1);
+                cmd.Parameters.AddWithValue("p_json", jsonPayload);
+
+                var scalar = await cmd.ExecuteScalarAsync();
+                if (scalar == null || scalar == DBNull.Value)
+                    return new List<object>();
+
+                var json = scalar.ToString();
+                using var doc = JsonDocument.Parse(json!);
+                var root = doc.RootElement;
+
+                if (root.GetProperty("status_code").GetInt32() != 200)
+                    throw new ApplicationException(
+                        root.GetProperty("message").GetString()
+                    );
+
+                var items = root
+                    .GetProperty("data")
+                    .GetProperty("items");
+
+                var result = new List<object>();
+
+                foreach (var item in items.EnumerateArray())
+                {
+                    // Keep raw JSON → frontend decides rendering
+                    result.Add(JsonSerializer.Deserialize<object>(item.GetRawText())!);
+                }
+
+                return result;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
     }
 }

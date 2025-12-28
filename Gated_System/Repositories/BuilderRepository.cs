@@ -1,6 +1,7 @@
 ﻿using Gated_System.Models;
 using Npgsql;
 using System.Text.Json;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace Gated_System.Repositories
 {
@@ -13,6 +14,53 @@ namespace Gated_System.Repositories
             _connection = connection;
         }
 
+        public async Task<IEnumerable<RoleModel>> GetAllRolesAsync()
+        {
+            const string sql = @"SELECT public.sp_api_rolemaster(@p_operation, @p_json)::text;";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(sql, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 1); // get all
+                cmd.Parameters.AddWithValue("p_json", DBNull.Value);
+
+                var scalar = await cmd.ExecuteScalarAsync();
+                if (scalar is null || scalar is DBNull)
+                    return Enumerable.Empty<RoleModel>();
+
+                var json = scalar.ToString();
+                if (string.IsNullOrWhiteSpace(json))
+                    return Enumerable.Empty<RoleModel>();
+
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (root.GetProperty("status_code").GetInt32() != 200)
+                    return Enumerable.Empty<RoleModel>();
+
+                if (!root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+                    return Enumerable.Empty<RoleModel>();
+
+                var roles = new List<RoleModel>();
+
+                foreach (var item in data.EnumerateArray())
+                {
+                    roles.Add(new RoleModel
+                    {
+                        Id = item.GetProperty("id").GetInt32(),
+                        RoleName = item.GetProperty("rolename").GetString() ?? "",
+                        IsActive = item.GetProperty("isactive").GetBoolean()
+                    });
+                }
+
+                return roles;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
         public async Task<int> CreateSecretaryRepoAsync(CreateSecretaryModel model)
         {
             // Adjust stored procedure name and operation code as per your DB design.
@@ -85,7 +133,7 @@ namespace Gated_System.Repositories
                 var scalarResult = await cmd.ExecuteScalarAsync();
 
                 if (scalarResult is null || scalarResult is DBNull)
-                    throw new Exception("sp_api_secretary returned null/empty result.");
+                    throw new Exception("User Role returned null/empty result.");
 
                 var resultJson = scalarResult.ToString();
 
@@ -94,7 +142,7 @@ namespace Gated_System.Repositories
 
                 // expected: {"status_code":201,"message":"Inserted","data":{"id":123}}
                 if (!root.TryGetProperty("data", out var dataEl) || !dataEl.TryGetProperty("id", out var idEl))
-                    throw new Exception("Unexpected response from sp_api_secretary: missing data.id");
+                    throw new Exception("Unexpected response from User Role: missing data.id");
 
                 var id = idEl.GetInt32();
                 return id;
@@ -179,5 +227,95 @@ namespace Gated_System.Repositories
             };
         }
 
+        public async Task<List<UserListResponseModel>> GetAllUsersAsync()
+        {
+            const string query = @"SELECT public.sp_api_usermaster(@p_operation, NULL)::text;";
+            var users = new List<UserListResponseModel>();
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 1);
+
+                var result = await cmd.ExecuteScalarAsync();
+                if (result == null) return users;
+
+                using var doc = JsonDocument.Parse(result.ToString()!);
+                var root = doc.RootElement;
+
+                if (root.GetProperty("status_code").GetInt32() != 200)
+                    return users;
+
+                if (!root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+                    return users;
+
+                foreach (var item in data.EnumerateArray())
+                {
+                    users.Add(new UserListResponseModel
+                    {
+                        Id = item.GetProperty("userid").GetInt32(),
+                        Firstname = item.GetProperty("firstname").GetString() ?? "",
+                        Middlename = item.TryGetProperty("middlename", out var m) ? m.GetString() ?? "" : "",
+                        Lastname = item.GetProperty("lastname").GetString() ?? "",
+                        Email = item.GetProperty("email").GetString() ?? "",
+                        Phone = item.TryGetProperty("phone", out var p) ? p.GetString() ?? "" : "",
+                        IsActive = item.GetProperty("isactive").GetBoolean(),
+                        RoleId = item.TryGetProperty("roleid", out var rid) ? rid.GetInt32() : null,
+                        RoleName = item.TryGetProperty("rolename", out var rn) ? rn.GetString() : null
+                    });
+                }
+
+                return users;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task<UserResponseModel?> GetUserByEmailOrPhoneAsync(string user)
+        {
+            const string sql = @"SELECT public.sp_api_getuserbyemailorphone(@p_json)::text;";
+
+            var payload = JsonSerializer.Serialize(new { user });
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(sql, _connection);
+                cmd.Parameters.AddWithValue("p_json", payload);
+
+                var result = await cmd.ExecuteScalarAsync();
+                if (result == null) return null;
+
+                using var doc = JsonDocument.Parse(result.ToString()!);
+                var root = doc.RootElement;
+
+                if (root.GetProperty("status_code").GetInt32() != 200)
+                    return null;
+
+                var data = root.GetProperty("data");
+
+                return indicateUser(data);
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        private static UserResponseModel indicateUser(JsonElement data)
+        {
+            return new UserResponseModel
+            {
+                Id = data.GetProperty("userid").GetInt32(),
+                Firstname = data.GetProperty("firstname").GetString() ?? "",
+                Middlename = data.GetProperty("middlename").GetString() ?? "",
+                Lastname = data.GetProperty("lastname").GetString() ?? "",
+                Email = data.GetProperty("email").GetString() ?? "",
+                Phone = data.GetProperty("phone").GetString() ?? ""
+            };
+        }
     }
 }

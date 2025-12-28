@@ -18,7 +18,7 @@ namespace Gated_System.Services
             return await _repo.GetOrCreateChatAsync(request);
         }
 
-        public async Task<IEnumerable<ChatMessageModel>> GetMessagesAsync(GetMessagesRequest request)
+        public async Task<IEnumerable<ChatMessageModel>> GetMessagesAsync(GetChatFeedRequest request)
         {
             if (request.Take <= 0) request.Take = 50;
             if (request.Skip < 0) request.Skip = 0;
@@ -61,6 +61,14 @@ namespace Gated_System.Services
             if (chatId <= 0) throw new ArgumentException("Invalid chatId");
             return await _repo.GetPollsForChatAsync(chatId, userId);
         }
+        public async Task<ChatPollFeedModel?> GetPollByPollIdAsync(int pollId, int userId)
+        {
+            if (pollId <= 0)
+                throw new ArgumentException("Invalid pollId");
+
+            return await _repo.GetPollByPollIdAsync(pollId, userId);
+        }
+
 
         public async Task ClosePollAsync(int userId, int pollId)
         {
@@ -73,6 +81,19 @@ namespace Gated_System.Services
             if (optionIds == null) throw new ArgumentException("optionIds required");
             // optional: check that poll is active/exists before calling repo (repo does that)
             await _repo.VoteAsync(pollId, userId, optionIds);
+        }
+
+        public async Task<ChatFeedResponse> GetChatFeedAsync(int chatId,int userId,int skip,int take)
+        {
+            var feed = await _repo.GetChatFeedAsync(chatId, userId, skip, take);
+
+            return new ChatFeedResponse
+            {
+                ChatId = chatId,
+                Skip = skip,
+                Take = take,
+                Items = feed
+            };
         }
     }
 }

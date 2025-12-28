@@ -56,6 +56,7 @@
 //}
 
 
+using Gated_System.Helpers;
 using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.SignalR;
@@ -115,5 +116,108 @@ public class ChatHub : Hub
             Console.WriteLine("Error in SendMessage: " + ex.Message);
             await Clients.Caller.SendAsync("Error", "An error occurred while processing your message.");
         }
+    }
+
+    private int GetCurrentUserId()
+    {
+        var idClaim = Context?.User?.FindFirst("userId")?.Value;
+
+        if (string.IsNullOrEmpty(idClaim))
+            return -1;
+
+        if (!int.TryParse(idClaim, out var uid))
+            return -1;
+
+        return uid;
+    }
+
+    public async Task SendPoll(ChatPollCreateModel request)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == -1)
+        {
+            await Clients.Caller.SendAsync("Error", "Invalid or expired token.");
+            return;
+        }
+
+        if (request.ChatId <= 0)
+        {
+            await Clients.Caller.SendAsync("Error", "Invalid data.");
+            return;
+        }
+
+        var pollId = await _chatService.CreatePollAsync(userId, request);
+
+        await Clients.Group(GroupName(request.ChatId))
+            .SendAsync("PollCreated", new
+            {
+                type = "poll",
+                pollId = pollId,
+                chatId = request.ChatId,
+                question = request.Question,
+                allowsMultiple = request.AllowsMultiple,
+                expiresAt = request.ExpiresAt,
+                createdBy = userId,
+                createdOn = DateTime.Now,
+                options = request.Options
+            });
+    }
+
+    // =======================
+    // POLL : VOTE
+    // =======================
+
+    public async Task VotePoll(ChatVoteRequest request)
+    {
+        var userId = GetCurrentUserId();
+        if (userId == -1)
+        {
+            await Clients.Caller.SendAsync("Error", "Invalid or expired token.");
+            return;
+        }
+
+        if (request.PollId <= 0)
+        {
+            await Clients.Caller.SendAsync("Error", "Invalid vote data.");
+            return;
+        }
+
+        await _chatService.VoteAsync(
+            userId,
+            request.PollId,
+            request.OptionIds
+        );
+
+        // Fetch updated poll result
+        var pollResult = await _chatService.GetPollByPollIdAsync(
+            request.PollId,
+            userId
+        );
+
+        await Clients.Group(GroupName(request.ChatId))
+            .SendAsync("PollVoted", new
+            {
+                type = "pollVote",
+                pollId = request.PollId,
+                updatedPoll = pollResult
+            });
+    }
+
+    // =======================
+    // POLL : CLOSE
+    // =======================
+
+    public async Task ClosePoll(ClosePollRealtimeRequest request)
+    {
+        await _chatService.ClosePollAsync(request.UserId, request.PollId);
+
+        await Clients.Group(GroupName(request.ChatId))
+            .SendAsync("PollClosed", new
+            {
+                type = "pollClosed",
+                pollId = request.PollId,
+                closedBy = request.UserId,
+                closedAt = DateTime.UtcNow
+            });
     }
 }

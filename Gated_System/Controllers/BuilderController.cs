@@ -1,4 +1,5 @@
-﻿using Gated_System.Models;
+﻿using Gated_System.Helpers;
+using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -15,11 +16,42 @@ namespace Gated_System.Controllers
 
         public BuilderController(IBuilderService service) => _service = service;
 
+        private int GetCurrentUserId()
+        {
+            var idClaim = User?.FindFirst("userId")?.Value;
+
+            if (string.IsNullOrEmpty(idClaim))
+                return -1;
+
+            if (!int.TryParse(idClaim, out var uid))
+                return -1;
+
+            return uid;
+        }
+
+        [HttpGet("getroles")]
+        public async Task<IActionResult> GetRoles()
+        {
+            var roles = await _service.GetRolesAsync();
+
+            return Ok(new
+            {
+                status = true,
+                message = "Roles fetched successfully",
+                data = new { roles }
+            });
+        }
+
         [HttpPost("createsecretary")]
         public async Task<IActionResult> CreateSecretary([FromBody] CreateSecretaryModel dto)
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+                dto.CreatedBy = userId;
+
                 var resultId = await _service.CreateSecretaryAsync(dto);
                 return Ok(new
                 {
@@ -44,6 +76,11 @@ namespace Gated_System.Controllers
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+                dto.CreatedBy = userId;
+
                 var resultId = await _service.CreateFlatOwnerAsync(dto);
                 return Ok(new
                 {
@@ -63,11 +100,15 @@ namespace Gated_System.Controllers
             }
         }
 
-        [HttpGet("propertiesbybuilder/{builderId:int}")]
-        public async Task<IActionResult> GetPropertiesByBuilder(int builderId)
+        [HttpGet("propertiesbybuilder")]
+        public async Task<IActionResult> GetPropertiesByBuilder()
         {
             try
             {
+                var builderId = GetCurrentUserId();
+                if (builderId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
                 var properties = await _service.GetPropertiesByBuilderIdAsync(builderId);
 
                 return Ok(new
@@ -88,6 +129,33 @@ namespace Gated_System.Controllers
                 // consider logging ex
                 return StatusCode(500, new { message = "An error occurred", details = ex.Message });
             }
+        }
+
+        [HttpGet("getallusers")]
+        public async Task<IActionResult> GetUsers()
+        {
+            var users = await _service.GetAllUsersAsync();
+
+            return Ok(new
+            {
+                status = true,
+                message = "Users fetched successfully",
+                data = users
+            });
+        }
+
+        [HttpPost("getuserbyemailorphone")]
+        public async Task<IActionResult> GetUserByEmailOrPhone([FromBody] EmailOrPhoneModel model)
+        {
+            if (string.IsNullOrWhiteSpace(model.user))
+                return BadRequest(ApiResponse.Fail("Email or phone is required"));
+
+            var result = await _service.GetUserByEmailOrPhoneAsync(model.user);
+
+            if (result == null)
+                return NotFound(ApiResponse.Fail("User not found"));
+
+            return Ok(ApiResponse.Success("User fetched successfully", result));
         }
     }
 }

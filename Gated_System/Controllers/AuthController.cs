@@ -84,6 +84,10 @@ namespace Gated_System.Controllers
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+                dto.BuilderId = userId;
                 var id = await _auth.CreatePropertyAsync(dto);
                 var returnData = new
                 {

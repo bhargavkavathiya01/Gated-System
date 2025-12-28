@@ -21,15 +21,12 @@ namespace Gated_System.Controllers
         [HttpPost("createorgetchatgroup")]
         public async Task<IActionResult> GetOrCreateChat([FromBody] GetOrCreateChatRequest request)
         {
-            // If CreatedBy not provided, set from JWT
-            if (request.CreatedBy <= 0)
-            {
-                var userid = GetCurrentUserId();
-                if (userid == -1)
-                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
 
-                request.CreatedBy = userid;
-            }
+            var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+            request.CreatedBy = userId;
 
             var chatId = await _chatService.GetOrCreateChatAsync(request);
             return Ok(new
@@ -42,7 +39,7 @@ namespace Gated_System.Controllers
 
         // GET api/chat/{chatId}/messages?skip=0&take=50
         [HttpPost("getmessages")]
-        public async Task<IActionResult> GetMessages(GetMessagesRequest request)
+        public async Task<IActionResult> GetMessages(GetChatFeedRequest request)
         {
             if (request.ChatId <= 0) return BadRequest(ApiResponse.Fail("Invalid ChatId"));
 
@@ -64,12 +61,13 @@ namespace Gated_System.Controllers
             });
         }
 
-        [HttpPost("getChats")]
+        [HttpPost("getmychats")]
         public async Task<IActionResult> GetMyChats(GroupRequestChatModel request)
         {
-            var userId = request.UserId;
-            if (userId <= 0)
-                return Unauthorized(ApiResponse.Fail("UserId missing"));
+            var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+            request.UserId = userId;
 
             var chats = await _chatService.GetUserChatsAsync(request);
             return Ok(new
@@ -80,15 +78,14 @@ namespace Gated_System.Controllers
             });
         }
 
-        [HttpPost("createPoll/{chatId:int}")]
-        public async Task<IActionResult> CreatePoll(int chatId, [FromBody] ChatPollCreateModel model)
+        [HttpPost("createpoll")]
+        public async Task<IActionResult> CreatePoll([FromBody] ChatPollCreateModel model)
         {
             var userId = GetCurrentUserId();
             if (userId == -1)
                 return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
 
             if (model == null) return BadRequest(ApiResponse.Fail("Invalid payload"));
-            model.ChatId = chatId;
 
             try
             {
@@ -120,7 +117,7 @@ namespace Gated_System.Controllers
         /// Get polls for a chat
         /// GET api/chatpolls/{chatId}?includeClosed=false
         /// </summary>
-        [HttpGet("getPolls/{chatId:int}")]
+        [HttpGet("getallpollsbychat/{chatId:int}")]
         public async Task<IActionResult> GetPolls(int chatId)
         {
             var userId = GetCurrentUserId();
@@ -140,8 +137,8 @@ namespace Gated_System.Controllers
         /// Vote on a poll
         /// POST api/chatpolls/{pollId}/vote
         /// </summary>
-        [HttpPost("{pollId:int}/vote")]
-        public async Task<IActionResult> Vote(int pollId, [FromBody] ChatVoteRequest request)
+        [HttpPost("pollvote")]
+        public async Task<IActionResult> Vote([FromBody] ChatVoteRequest request)
         {
             var userId = GetCurrentUserId();
             if (userId == -1)
@@ -152,7 +149,7 @@ namespace Gated_System.Controllers
 
             try
             {
-                await _chatService.VoteAsync(userId, pollId, request.OptionIds);
+                await _chatService.VoteAsync(userId, request.PollId, request.OptionIds);
                 return Ok(new
                 {
                     status = true,
@@ -184,40 +181,83 @@ namespace Gated_System.Controllers
             return uid;
         }
 
+        [HttpGet("getpollbyid/{pollId:int}")]
+        public async Task<IActionResult> GetPollById(int pollId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId <= 0)
+                return Unauthorized();
+
+            var poll = await _chatService.GetPollByPollIdAsync(pollId, userId);
+            if (poll == null)
+                return NotFound();
+
+            return Ok(new
+            {
+                status = true,
+                message = "Poll fetched successfully",
+                data = poll
+            });
+        }
+
+
+        [HttpPost("getchatfeed")]
+        public async Task<IActionResult> GetChatFeed([FromBody] GetChatFeedRequest request)
+        {
+            if (request.ChatId <= 0)
+                return BadRequest(ApiResponse.Fail("Invalid ChatId"));
+
+            var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+            var result = await _chatService.GetChatFeedAsync(
+                request.ChatId,
+                userId,
+                request.Skip,
+                request.Take
+            );
+
+            return Ok(ApiResponse.Success("Chat feed fetched successfully", result));
+        }
+
+
         /// <summary>
         /// Close (end) a poll
         /// POST api/chatpolls/{pollId}/close
         /// </summary>
-        [HttpPost("{pollId:int}/close")]
-        public async Task<IActionResult> ClosePoll(int pollId)
-        {
-            var userId = GetCurrentUserId();
-            if (userId == -1)
-                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
-            try
-            {
-                // TODO: check permission (creator or admin)
-                await _chatService.ClosePollAsync(userId, pollId);
-                return Ok(new
-                {
-                    status = true,
-                    message = "Polls Closed Successfully",
-                    data = new { }
-                });
-            }
-            catch (UnauthorizedAccessException)
-            {
-                return Forbid();
-            }
-            catch (ApplicationException ex)
-            {
-                return BadRequest(new
-                {
-                    status = false,
-                    message = ex.Message,
-                    data = new { }
-                });
-            }
-        }
+        //[HttpPost("{pollId:int}/close")]
+        //public async Task<IActionResult> ClosePoll(int pollId)
+        //{
+        //    var userId = GetCurrentUserId();
+        //    if (userId == -1)
+        //        return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+        //    try
+        //    {
+        //        // TODO: check permission (creator or admin)
+        //        await _chatService.ClosePollAsync(userId, pollId);
+        //        return Ok(new
+        //        {
+        //            status = true,
+        //            message = "Polls Closed Successfully",
+        //            data = new { }
+        //        });
+        //    }
+        //    catch (UnauthorizedAccessException)
+        //    {
+        //        return Forbid();
+        //    }
+        //    catch (ApplicationException ex)
+        //    {
+        //        return BadRequest(new
+        //        {
+        //            status = false,
+        //            message = ex.Message,
+        //            data = new { }
+        //        });
+        //    }
+        //}
+
+
     }
 }

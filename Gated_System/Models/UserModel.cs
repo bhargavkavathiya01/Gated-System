@@ -13,6 +13,18 @@
         public bool IsActive { get; set; } = true;
         public string CreatedBy { get; set; }
     }
+    public class UserListResponseModel
+    {
+        public int Id { get; set; }
+        public string Firstname { get; set; } = "";
+        public string Middlename { get; set; } = "";
+        public string Lastname { get; set; } = "";
+        public string Email { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public bool IsActive { get; set; }
+        public int? RoleId { get; set; }
+        public string? RoleName { get; set; }
+    }
 
     public class UserResponseModel
     {
@@ -43,6 +55,10 @@
     public class RefreshTokenModel
     {
         public string RefreshToken { get; set; } = "";
+    }
+    public class EmailOrPhoneModel
+    {
+        public string user { get; set; } = "";
     }
 
     public class UserPropertyRole

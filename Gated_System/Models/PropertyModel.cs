@@ -32,6 +32,14 @@
         public int CreatedBy { get; set; } //Builder Id
     }
 
+    public class CreateCommitteeModel
+    {
+        public int PropertyId { get; set; }
+        public int UserId { get; set; }
+        public int RoleId { get; set; }
+        public int CreatedBy { get; set; } //Secretory Id
+    }
+
     public class CreateFlatOwnerModel
     {
         public int PropertyId { get; set; }
@@ -55,7 +63,7 @@
 
     public class AdminPropertyViewModel
     {
-        public int Id { get; set; }
+        public int PropertyId { get; set; }
         public string PropertyName { get; set; } = "";
         public string Address { get; set; } = "";
         public string City { get; set; } = "";
