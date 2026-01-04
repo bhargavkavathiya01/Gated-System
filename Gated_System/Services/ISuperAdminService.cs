@@ -6,6 +6,6 @@ namespace Gated_System.Services
     {
         Task<IEnumerable<AdminPropertyViewModel>> GetAllPropertiesAsync();
         Task<IEnumerable<AdminPropertyViewModel>> GetAllPropertiesByStatusAsync(string status);
-        Task UpdatePropertyVerificationAsync(UpdatePropertyVerificationModel dto);
+        Task<string> UpdatePropertyVerificationAsync(UpdatePropertyVerificationModel dto);
     }
 }

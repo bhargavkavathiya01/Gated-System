@@ -38,6 +38,22 @@ namespace Gated_System.Services
             var item = root.GetProperty("data").EnumerateArray().First();
             var visitorRequestId = item.GetProperty("id").GetInt32();
 
+            int usedCount = item.TryGetProperty("used_count", out var uc) ? uc.GetInt32() : 0;
+            int? maxUses = item.TryGetProperty("max_uses", out var mu) && mu.ValueKind != JsonValueKind.Null ? mu.GetInt32() : null;
+            DateTime? expiry = item.TryGetProperty("expiry", out var ex) && ex.ValueKind != JsonValueKind.Null ? ex.GetDateTime() : null;
+
+            string nextStatus = "Active";
+
+            if (expiry.HasValue && expiry.Value < DateTime.Now)
+            {
+                nextStatus = "Expired";
+            }
+            // If this is the last allowed usage (e.g. max is 2, current is 1, so this scan makes it 2)
+            else if (maxUses.HasValue && (usedCount + 1) >= maxUses.Value)
+            {
+                nextStatus = "Expired";
+            }
+
             // 2) create visitor log
             var logPayload = new
             {
@@ -60,7 +76,8 @@ namespace Gated_System.Services
             var updatePayload = new
             {
                 id = visitorRequestId,
-                status = "Approved",
+                //status = "Approved",
+                status = nextStatus,
                 modifiedby = SecurityId
             };
             using var updDoc = await _repo.UpdateVisitorRequestStatusRawAsync(updatePayload);

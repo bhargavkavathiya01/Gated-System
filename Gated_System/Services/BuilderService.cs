@@ -58,5 +58,25 @@ namespace Gated_System.Services
         {
             return await _repo.GetUserByEmailOrPhoneAsync(user);
         }
+
+        public async Task<ServiceResult<PropertyMemberDetailsResponse>> GetMemberDetailsAsync(PropertyMemberRequest request)
+        {
+            try
+            {
+                if (request.PropertyId <= 0)
+                    return ServiceResult<PropertyMemberDetailsResponse>.Fail("Invalid Property ID");
+
+                var data = await _repo.GetPropertyMemberDetailsAsync(request);
+
+                if (data == null)
+                    return ServiceResult<PropertyMemberDetailsResponse>.Fail("No data found for the specified property");
+
+                return ServiceResult<PropertyMemberDetailsResponse>.Success(data, "Property member details fetched successfully");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<PropertyMemberDetailsResponse>.Fail(ex.Message);
+            }
+        }
     }
 }

@@ -188,5 +188,18 @@ namespace Gated_System.Services
 
             return id;
         }
+
+        public async Task<ServiceResult<IEnumerable<dynamic>>> GetPGMembersAsync(PGMemberRequest request)
+        {
+            var data = await _repo.GetPGMembersAsync(request);
+            return ServiceResult<IEnumerable<dynamic>>.Success(data, "PG members fetched successfully.");
+        }
+
+        public async Task<ServiceResult<bool>> DeletePGMemberAsync(DeletePGRequest request)
+        {
+            var success = await _repo.DeletePGMemberAsync(request);
+            return success ? ServiceResult<bool>.Success(true, "PG member removed successfully.")
+                           : ServiceResult<bool>.Fail("Failed to remove PG member. Verify all details.");
+        }
     }
 }

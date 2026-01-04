@@ -1,4 +1,5 @@
-﻿using Gated_System.Models;
+﻿using Gated_System.Helpers;
+using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -13,11 +14,29 @@ namespace Gated_System.Controllers
 
         public FlatOwnerController(IFlatOwnerService service) => _service = service;
 
+        private int GetCurrentUserId()
+        {
+            var idClaim = User?.FindFirst("userId")?.Value;
+
+            if (string.IsNullOrEmpty(idClaim))
+                return -1;
+
+            if (!int.TryParse(idClaim, out var uid))
+                return -1;
+
+            return uid;
+        }
+
         [HttpPost("invitevisitor")]
         public async Task<IActionResult> CreateVisitor([FromBody] CreateVisitorDto dto)
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+                dto.RequestedBy = userId;
+
                 var result = await _service.CreateVisitorAsync(dto);
                 return Ok(new
                 {
@@ -84,6 +103,24 @@ namespace Gated_System.Controllers
                 // consider logging ex
                 return StatusCode(500, new { message = "An error occurred", details = ex.Message });
             }
+        }
+
+        [HttpPost("getpgs")]
+        public async Task<IActionResult> GetPGs([FromBody] PGMemberRequest request)
+        {
+            var result = await _service.GetPGMembersAsync(request);
+            return Ok(new { status = true, message = result.Message, data = result.Data });
+        }
+
+        [HttpDelete("deletepg")]
+        public async Task<IActionResult> DeletePG([FromBody] DeletePGRequest request)
+        {
+            var result = await _service.DeletePGMemberAsync(request);
+
+            if (!result.status)
+                return BadRequest(new { status = false, message = result.Message });
+
+            return Ok(new { status = true, message = result.Message });
         }
     }
 }

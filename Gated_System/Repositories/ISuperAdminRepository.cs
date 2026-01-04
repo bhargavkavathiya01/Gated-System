@@ -6,6 +6,6 @@ namespace Gated_System.Repositories
     {
         Task<IEnumerable<AdminPropertyViewModel>> GetAllPropertiesAsync();
         Task<IEnumerable<AdminPropertyViewModel>> GetAllPropertiesByStatusAsync(string status);
-        Task UpdatePropertyVerificationRepoAsync(UpdatePropertyVerificationModel dto);
+        Task<string> UpdatePropertyVerificationRepoAsync(UpdatePropertyVerificationModel dto);
     }
 }

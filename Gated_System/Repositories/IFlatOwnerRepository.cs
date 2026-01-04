@@ -8,5 +8,7 @@ namespace Gated_System.Repositories
         Task<int> CreateVisitorRequestAsync(object payload);
         Task<JsonDocument> GetVisitorByIdRawAsync(int id);
         Task<int> CreatePGRepoAsync(CreateFlatOwnerModel model);
+        Task<IEnumerable<dynamic>> GetPGMembersAsync(PGMemberRequest request);
+        Task<bool> DeletePGMemberAsync(DeletePGRequest request);
     }
 }

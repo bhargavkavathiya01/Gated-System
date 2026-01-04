@@ -59,9 +59,13 @@ namespace Gated_System.Controllers
                 if (string.IsNullOrWhiteSpace(dto.IsVerified)) return BadRequest(new { message = "IsVerified is required." });
 
 
-                await _service.UpdatePropertyVerificationAsync(dto);
+                string resultMessage = await _service.UpdatePropertyVerificationAsync(dto);
 
-                return Ok(new { status = true, message = "Property verification status updated successfully" });
+                return Ok(new
+                {
+                    status = true,
+                    message = resultMessage
+                });
             }
             catch (ApplicationException ex)
             {

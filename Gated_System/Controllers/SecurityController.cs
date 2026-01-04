@@ -41,17 +41,17 @@ namespace Gated_System.Controllers
             catch (ApplicationException ex)
             {
                 if (ex.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
-                    return NotFound(new { message = ex.Message });
+                    return NotFound(new { status = false, message = ex.Message });
                 if (ex.Message.Contains("expired", StringComparison.OrdinalIgnoreCase))
-                    return StatusCode(410, new { message = ex.Message });
+                    return StatusCode(410, new { status = false, message = ex.Message });
                 if (ex.Message.Contains("rejected", StringComparison.OrdinalIgnoreCase))
                     return Forbid();
 
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(new {status=false, message = ex.Message });
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+                return StatusCode(500, new { status= false, message = "An error occurred", details = ex.Message });
             }
         }
 

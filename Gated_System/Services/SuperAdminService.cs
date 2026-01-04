@@ -21,7 +21,7 @@ namespace Gated_System.Services
             return result ?? Enumerable.Empty<AdminPropertyViewModel>();
         }
 
-        public async Task UpdatePropertyVerificationAsync(UpdatePropertyVerificationModel dto)
+        public async Task<string> UpdatePropertyVerificationAsync(UpdatePropertyVerificationModel dto)
         {
             if (dto == null) throw new ApplicationException("Request body is required.");
             if (dto.PropertyId <= 0) throw new ApplicationException("Invalid property id.");
@@ -31,7 +31,7 @@ namespace Gated_System.Services
             dto.IsVerified = dto.IsVerified.Trim();
 
             // call repository to perform update
-            await _repo.UpdatePropertyVerificationRepoAsync(dto);
+            return await _repo.UpdatePropertyVerificationRepoAsync(dto);
         }
     }
 }

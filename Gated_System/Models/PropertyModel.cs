@@ -74,4 +74,36 @@
         public DateTime CreatedOn { get; set; }
         public DateTime? ModifiedOn { get; set; }
     }
+
+    public class PropertyMemberRequest
+    {
+        public int PropertyId { get; set; }
+    }
+
+
+    public class PropertyMemberDetailsResponse
+    {
+        public int TotalResidents { get; set; }
+        public int TotalFlatowners { get; set; }
+        public List<SecretaryDetailDto> SecretaryDetails { get; set; } = new();
+        public List<SecurityDetailDto> SecurityDetails { get; set; } = new();
+    }
+
+    public class SecretaryDetailDto
+    {
+        public int Id { get; set; }
+        public string Firstname { get; set; } = string.Empty;
+        public string Lastname { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class SecurityDetailDto
+    {
+        public int Id { get; set; }
+        public string Firstname { get; set; } = string.Empty;
+        public string Lastname { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+    }
 }

@@ -16,5 +16,6 @@ namespace Gated_System.Repositories
         Task<(int id, DateTime expiry)?> GetRefreshTokenAsync(string token);
         Task DeleteRefreshTokenAsync(string token);
         Task<int> CreatePropertyAsync(PropertyCreateModel property);
+        Task<bool> UpdatePasswordAsync(UpdatePasswordModel model);
     }
 }

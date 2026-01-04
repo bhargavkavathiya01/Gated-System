@@ -9,5 +9,6 @@ namespace Gated_System.Services
         public Task<UserRoleResponseModel?> GetUserByToken(int UserId);
         Task<RefreshTokenResponseModel?> RefreshAsync(string refreshToken);
         Task<int> CreatePropertyAsync(PropertyCreateModel property);
+        Task<ServiceResult<bool>> ForgotPasswordAsync(ForgotPasswordRequest request);
     }
 }

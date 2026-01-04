@@ -49,6 +49,14 @@ namespace Gated_System.Repositories
                 using var doc = JsonDocument.Parse(resultJson!);
                 var root = doc.RootElement;
 
+                var status = root.GetProperty("status_code").GetInt32();
+                var message = root.TryGetProperty("message", out var m) ? m.GetString() : null;
+
+                if (status == 409)
+                {
+                    throw new ApplicationException(message);
+                }
+
                 var id = root
                     .GetProperty("data")
                     .GetProperty("id")
@@ -499,6 +507,22 @@ namespace Gated_System.Repositories
                         ? bn.GetString()
                         : null;
 
+                    var buildingData = new List<BuildingData>();
+
+                    // Match the alias "buildingData" used in the SQL subquery
+                    if (item.TryGetProperty("buildingData", out var bdArray) && bdArray.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var bItem in bdArray.EnumerateArray())
+                        {
+                            buildingData.Add(new BuildingData
+                            {
+                                // Match the aliases "buildingId" and "buildingName" from the SQL subquery
+                                BuildingId = bItem.TryGetProperty("buildingId", out var bId) ? bId.GetInt32() : 0,
+                                BuildingName = bItem.TryGetProperty("buildingName", out var bName) ? bName.GetString() ?? "" : ""
+                            });
+                        }
+                    }
+
                     roles.Add(new UserPropertyRole
                     {
                         PropertyId = propertyId,
@@ -507,7 +531,8 @@ namespace Gated_System.Repositories
                         RoleId = roleId,
                         RoleName = roleName,
                         PropertyName = propertyName,
-                        BuildingName = buildingName
+                        BuildingName = buildingName,
+                        BuildingData = buildingData
                     });
                 }
 
@@ -873,5 +898,28 @@ namespace Gated_System.Repositories
             }
         }
 
+        public async Task<bool> UpdatePasswordAsync(UpdatePasswordModel model)
+        {
+            const string query = @"SELECT public.sp_api_usermaster(@p_operation, @p_json)::text;";
+            var payload = new
+            {
+                id = model.UserId,
+                password = model.NewPassword,
+                modifiedby = model.ModifiedBy
+            };
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 3); // Update operation
+                cmd.Parameters.AddWithValue("p_json", jsonPayload);
+                var result = await cmd.ExecuteScalarAsync();
+                using var doc = JsonDocument.Parse(result.ToString()!);
+                return doc.RootElement.GetProperty("status_code").GetInt32() == 200;
+            }
+            finally { await _connection.CloseAsync(); }
+        }
     }
 }

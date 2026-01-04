@@ -42,7 +42,7 @@ namespace Gated_System.Controllers
             });
         }
 
-        [HttpPost("createsecretary")]
+        [HttpPost("createsecretaryorsecurity")]
         public async Task<IActionResult> CreateSecretary([FromBody] CreateSecretaryModel dto)
         {
             try
@@ -62,7 +62,12 @@ namespace Gated_System.Controllers
             }
             catch (ApplicationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return Conflict(new
+                {
+                    status = false,
+                    message = ex.Message,
+                    data = new {}
+                });
             }
             catch (Exception ex)
             {
@@ -156,6 +161,31 @@ namespace Gated_System.Controllers
                 return NotFound(ApiResponse.Fail("User not found"));
 
             return Ok(ApiResponse.Success("User fetched successfully", result));
+        }
+
+        [HttpGet("memberdetails/{propertyId}")]
+        public async Task<IActionResult> GetMemberDetails(int propertyId)
+        {
+            // Encapsulate ID into model as per your requirement
+            var request = new PropertyMemberRequest { PropertyId = propertyId };
+
+            var result = await _service.GetMemberDetailsAsync(request);
+
+            if (!result.status)
+            {
+                return BadRequest(new
+                {
+                    status = false,
+                    message = result.Message
+                });
+            }
+
+            return Ok(new
+            {
+                status = true,
+                message = result.Message,
+                data = result.Data
+            });
         }
     }
 }

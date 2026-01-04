@@ -117,5 +117,53 @@ namespace Gated_System.Repositories
             }
         }
 
+        public async Task<IEnumerable<dynamic>> GetPGMembersAsync(PGMemberRequest request)
+        {
+            const string query = @"SELECT public.sp_api_managepgmembers(@p_operation, @p_json)::text;";
+            var jsonPayload = JsonSerializer.Serialize(new
+            {
+                propertyid = request.PropertyId,
+                buildingid = request.BuildingId,
+                flatnumber = request.FlatNumber
+            });
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 1);
+                cmd.Parameters.AddWithValue("p_json", jsonPayload);
+                var result = await cmd.ExecuteScalarAsync();
+
+                using var doc = JsonDocument.Parse(result.ToString()!);
+                return JsonSerializer.Deserialize<IEnumerable<dynamic>>(doc.RootElement.GetProperty("data").GetRawText()) ?? new List<dynamic>();
+            }
+            finally { await _connection.CloseAsync(); }
+        }
+
+        public async Task<bool> DeletePGMemberAsync(DeletePGRequest request)
+        {
+            const string query = @"SELECT public.sp_api_managepgmembers(@p_operation, @p_json)::text;";
+            var payload = new
+            {
+                userid = request.UserId,
+                propertyid = request.PropertyId,
+                buildingid = request.BuildingId,
+                flatnumber = request.FlatNumber
+            };
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 4);
+                cmd.Parameters.AddWithValue("p_json", JsonSerializer.Serialize(payload));
+
+                var result = await cmd.ExecuteScalarAsync();
+                using var doc = JsonDocument.Parse(result!.ToString()!);
+                return doc.RootElement.GetProperty("status_code").GetInt32() == 200;
+            }
+            finally { await _connection.CloseAsync(); }
+        }
     }
 }

@@ -99,7 +99,7 @@ namespace Gated_System.Repositories
             }
         }
 
-        public async Task UpdatePropertyVerificationRepoAsync(UpdatePropertyVerificationModel dto)
+        public async Task<string> UpdatePropertyVerificationRepoAsync(UpdatePropertyVerificationModel dto)
         {
             const string Sp = @"SELECT public.sp_api_propertymaster(@p_operation, @p_json)::text;";
             if (dto == null) throw new ArgumentNullException(nameof(dto));
@@ -146,7 +146,7 @@ namespace Gated_System.Repositories
                 }
 
                 // success — nothing to return
-                return;
+                return message ?? "Property verification status updated successfully";
             }
             finally
             {

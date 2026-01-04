@@ -52,9 +52,17 @@ namespace Gated_System.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel dto)
         {
-            var res = await _auth.LoginAsync(dto);
-            if (!res.status) return Unauthorized(ApiResponse.Fail(res.Message));
-            return Ok(res);
+            try
+            {
+                var res = await _auth.LoginAsync(dto);
+                if (!res.status) return Unauthorized(ApiResponse.Fail(res.Message));
+                return Ok(res);
+            }
+            catch (ApplicationException ex)
+            {
+                // This will catch "Email already exists" or "Phone Number already exists"
+                return Conflict(new { status = false, message = ex.Message });
+            }
         }
 
         [HttpGet("getuserbytoken")]
@@ -111,6 +119,30 @@ namespace Gated_System.Controllers
                 // log ex if you have logger
                 return StatusCode(500, ApiResponse.Fail("Internal server error", new { detail = ex.Message }));
             }
+        }
+
+        [HttpPost("forgotpassword")]
+        public async Task<IActionResult> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            if (string.IsNullOrEmpty(request.Email))
+                return BadRequest(new { status = false, message = "Email is required" });
+
+            var result = await _auth.ForgotPasswordAsync(request);
+
+            if (!result.status)
+            {
+                return BadRequest(new
+                {
+                    status = false,
+                    message = result.Message
+                });
+            }
+
+            return Ok(new
+            {
+                status = true,
+                message = result.Message
+            });
         }
     }
 }

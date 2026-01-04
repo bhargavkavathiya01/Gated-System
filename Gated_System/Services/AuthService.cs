@@ -2,19 +2,22 @@
 using Gated_System.Models;
 using Gated_System.Repositories;
 using Microsoft.Extensions.Options;
+using static Gated_System.Helpers.SendEmailHelper;
 
 namespace Gated_System.Services
 {
     public class AuthService : IAuthService
     {
         private readonly IAuthRepository _repo;
+        private readonly SendEmailHelper _emailHelper;
         private readonly PasswordHasher _hasher;
         private readonly JwtTokenGenerator _jwt;
         private readonly JwtOptions _jwtOptions;
 
-        public AuthService(IAuthRepository repo, PasswordHasher hasher, JwtTokenGenerator jwt, IOptions<JwtOptions> jwtOptions)
+        public AuthService(IAuthRepository repo, PasswordHasher hasher, JwtTokenGenerator jwt, IOptions<JwtOptions> jwtOptions,SendEmailHelper emailHelper)
         {
             _repo = repo;
+            _emailHelper = emailHelper;
             _hasher = hasher;
             _jwt = jwt;
             _jwtOptions = jwtOptions.Value;
@@ -149,6 +152,44 @@ namespace Gated_System.Services
             // Call repository that performs both operations inside a transaction
             var id = await _repo.CreatePropertyAsync(dto);
             return id;
+        }
+
+        public async Task<ServiceResult<bool>> ForgotPasswordAsync(ForgotPasswordRequest request)
+        {
+            try
+            {
+                var user = await _repo.GetByEmailAsync(request.Email);
+                if (user == null) return ServiceResult<bool>.Fail("User with this email does not exist.");
+
+                string tempPassword = Guid.NewGuid().ToString().Substring(0, 8);
+
+                var updateModel = new UpdatePasswordModel
+                {
+                    UserId = user.Id,
+                    NewPassword = tempPassword,
+                    ModifiedBy = user.Id
+                };
+
+                bool dbUpdated = await _repo.UpdatePasswordAsync(updateModel);
+
+                if (!dbUpdated) return ServiceResult<bool>.Fail("Failed to update password in database.");
+
+                // 4. Send Email
+                var emailData = new EmailModel
+                {
+                    To = request.Email,
+                    Subject = "Your Temporary Password",
+                    Body = $"<p>Your password has been reset.</p><p>Your new temporary password is: <b>{tempPassword}</b></p>"
+                };
+
+                await _emailHelper.SendEmailAsync(emailData);
+
+                return ServiceResult<bool>.Success(true, "A temporary password has been sent to your email.");
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.Fail($"An error occurred: {ex.Message}");
+            }
         }
     }
 }

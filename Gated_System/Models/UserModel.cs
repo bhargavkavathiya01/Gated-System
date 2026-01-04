@@ -9,9 +9,8 @@
         public string Email { get; set; } = "";
         public string Phone { get; set; } = "";
         public string Password { get; set; } = "";
-        public byte[] PasswordSalt { get; set; } = Array.Empty<byte>();
         public bool IsActive { get; set; } = true;
-        public string CreatedBy { get; set; }
+        public int CreatedBy { get; set; }
     }
     public class UserListResponseModel
     {
@@ -72,6 +71,48 @@
 
         public string? PropertyName { get; set; }
         public string? BuildingName { get; set; }
+
+        public List<BuildingData> BuildingData { get; set; } = new List<BuildingData>();
+    }
+
+    public class BuildingData
+    {
+        public int BuildingId { get; set; }
+        public string BuildingName { get; set; } = "";
+    }
+
+    public class ResetPasswordRequest
+    {
+        public int UserId { get; set; }
+        public string OldPassword { get; set; } = string.Empty;
+        public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class UpdatePasswordModel
+    {
+        public int UserId { get; set; }
+        public string NewPassword { get; set; } = string.Empty;
+        public int ModifiedBy { get; set; }
+    }
+
+    public class ForgotPasswordRequest
+    {
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class PGMemberRequest
+    {
+        public int PropertyId { get; set; }
+        public int BuildingId { get; set; }
+        public string FlatNumber { get; set; } = string.Empty;
+    }
+
+    public class DeletePGRequest
+    {
+        public int PropertyId { get; set; }
+        public int BuildingId { get; set; }
+        public string FlatNumber { get; set; } = string.Empty;
+        public int UserId { get; set; }
     }
 
     public class ServiceResult<T>

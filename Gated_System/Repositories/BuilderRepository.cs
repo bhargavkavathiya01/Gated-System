@@ -86,16 +86,27 @@ namespace Gated_System.Repositories
                 var scalarResult = await cmd.ExecuteScalarAsync();
 
                 if (scalarResult is null || scalarResult is DBNull)
-                    throw new Exception("sp_api_secretary returned null/empty result.");
+                    throw new Exception("returned null/empty result.");
 
                 var resultJson = scalarResult.ToString();
 
                 using var doc = JsonDocument.Parse(resultJson);
                 var root = doc.RootElement;
 
+                var statusCode = root.GetProperty("status_code").GetInt32();
+                var message = root.GetProperty("message").GetString();
+
+                // 🔴 Duplicate case
+                if (statusCode == 409)
+                    throw new ApplicationException(message);
+
+                // 🔴 Any DB error
+                if (statusCode != 201)
+                    throw new Exception(message ?? "Failed to create secretary.");
+
                 // expected: {"status_code":201,"message":"Inserted","data":{"id":123}}
                 if (!root.TryGetProperty("data", out var dataEl) || !dataEl.TryGetProperty("id", out var idEl))
-                    throw new Exception("Unexpected response from sp_api_secretary: missing data.id");
+                    throw new Exception("Unexpected response from User Role: missing data.id");
 
                 var id = idEl.GetInt32();
                 return id;
@@ -316,6 +327,43 @@ namespace Gated_System.Repositories
                 Email = data.GetProperty("email").GetString() ?? "",
                 Phone = data.GetProperty("phone").GetString() ?? ""
             };
+        }
+
+        public async Task<PropertyMemberDetailsResponse?> GetPropertyMemberDetailsAsync(PropertyMemberRequest request)
+        {
+            const string query = @"SELECT public.sp_api_getPropertyWiseMemberDetails(@p_propertyid)::text;";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_propertyid", request.PropertyId);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+
+                if (scalarResult == null || scalarResult is DBNull)
+                    return null;
+
+                using var doc = JsonDocument.Parse(scalarResult.ToString()!);
+                var root = doc.RootElement;
+
+                int statusCode = root.GetProperty("status_code").GetInt32();
+                if (statusCode != 200)
+                {
+                    var msg = root.GetProperty("message").GetString();
+                    throw new ApplicationException(msg ?? "Error fetching property details");
+                }
+
+                // Deserializing the 'data' property of the JSON result
+                var dataJson = root.GetProperty("data").GetRawText();
+                var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+                return JsonSerializer.Deserialize<PropertyMemberDetailsResponse>(dataJson, options);
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
         }
     }
 }

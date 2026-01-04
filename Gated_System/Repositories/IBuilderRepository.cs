@@ -10,5 +10,6 @@ namespace Gated_System.Repositories
         Task<IEnumerable<RoleModel>> GetAllRolesAsync();
         Task<List<UserListResponseModel>> GetAllUsersAsync();
         Task<UserResponseModel?> GetUserByEmailOrPhoneAsync(string user);
+        Task<PropertyMemberDetailsResponse?> GetPropertyMemberDetailsAsync(PropertyMemberRequest request);
     }
 }
