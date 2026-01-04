@@ -175,13 +175,89 @@ namespace Gated_System.Services
                 if (!dbUpdated) return ServiceResult<bool>.Fail("Failed to update password in database.");
 
                 // 4. Send Email
+                //var emailData = new EmailModel
+                //{
+                //    To = request.Email,
+                //    Subject = "Your Temporary Password",
+                //    Body = $"<p>Your password has been reset.</p><p>Your new temporary password is: <b>{tempPassword}</b></p>"
+                //};
+
                 var emailData = new EmailModel
                 {
                     To = request.Email,
-                    Subject = "Your Temporary Password",
-                    Body = $"<p>Your password has been reset.</p><p>Your new temporary password is: <b>{tempPassword}</b></p>"
-                };
+                    Subject = "Password Reset – Temporary Access",
+                    Body = $@"
+                    <!DOCTYPE html>
+                    <html>
+                    <head>
+                        <meta charset='UTF-8'>
+                        <title>Password Reset</title>
+                    </head>
+                    <body style='margin:0; padding:0; background-color:#f4f6f8; font-family:Arial, Helvetica, sans-serif;'>
 
+                    <table width='100%' cellpadding='0' cellspacing='0' style='background-color:#f4f6f8; padding:20px;'>
+                        <tr>
+                            <td align='center'>
+                                <table width='600' cellpadding='0' cellspacing='0' style='background:#ffffff; border-radius:8px; overflow:hidden;'>
+                
+                                    <!-- Header -->
+                                    <tr>
+                                        <td style='background:#1f2937; padding:20px; text-align:center;'>
+                                            <h2 style='color:#ffffff; margin:0;'>Nandi</h2>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Body -->
+                                    <tr>
+                                        <td style='padding:30px; color:#333333;'>
+                                            <p style='font-size:16px; margin:0 0 12px;'>Hello,</p>
+
+                                            <p style='font-size:15px; line-height:1.6;'>
+                                                We received a request to reset your password.  
+                                                Please use the temporary password below to log in.
+                                            </p>
+
+                                            <div style='margin:25px 0; text-align:center;'>
+                                                <span style='display:inline-block; padding:12px 20px;
+                                                             background:#e5e7eb;
+                                                             font-size:18px;
+                                                             font-weight:bold;
+                                                             letter-spacing:2px;
+                                                             border-radius:6px;'>
+                                                    {tempPassword}
+                                                </span>
+                                            </div>
+
+                                            <p style='font-size:14px; line-height:1.6; color:#555555;'>
+                                                For security reasons, please change your password immediately after logging in.
+                                            </p>
+
+                                            <p style='font-size:14px; color:#555555;'>
+                                                If you did not request this change, please contact our support team immediately.
+                                            </p>
+
+                                            <p style='margin-top:30px; font-size:14px;'>
+                                                Regards,<br>
+                                                <strong>Nandi Support Team</strong>
+                                            </p>
+                                        </td>
+                                    </tr>
+
+                                    <!-- Footer -->
+                                    <tr>
+                                        <td style='background:#f9fafb; padding:15px; text-align:center; font-size:12px; color:#777777;'>
+                                            © {DateTime.Now.Year} Nandi. All rights reserved.
+                                        </td>
+                                    </tr>
+
+                                </table>
+                            </td>
+                        </tr>
+                    </table>
+
+                    </body>
+                    </html>"
+                };
                 await _emailHelper.SendEmailAsync(emailData);
 
                 return ServiceResult<bool>.Success(true, "A temporary password has been sent to your email.");

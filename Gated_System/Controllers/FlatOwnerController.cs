@@ -3,6 +3,7 @@ using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using static Gated_System.Models.QRModel;
 
 namespace Gated_System.Controllers
 {
@@ -38,26 +39,33 @@ namespace Gated_System.Controllers
                 dto.RequestedBy = userId;
 
                 var result = await _service.CreateVisitorAsync(dto);
-                return Ok(new
+                //return Ok(new
+                //{
+                //    status = true,
+                //    message = "Visitor created successfully",
+                //    data = new
+                //    {
+                //        id = result.Id,
+                //        qrcode = result.QrToken,
+                //        //qrImageBase64 = result.QrImageBase64,
+                //        expiry = result.ExpiryUtc
+                //    }
+                //});
+                return Ok(ApiResponse.Success("Visitor created successfully", new
                 {
-                    status = true,
-                    message = "Visitor created successfully",
-                    data = new
-                    {
-                        id = result.Id,
-                        qrcode = result.QrToken,
-                        qrImageBase64 = result.QrImageBase64,
-                        expiry = result.ExpiryUtc
-                    }
-                });
+                    id = result.Id,
+                    qrcode = result.QrToken,
+                    //qrImageBase64 = result.QrImageBase64,
+                    expiry = result.ExpiryUtc
+                }));
             }
             catch (ApplicationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.Fail(ex.Message));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+                return StatusCode(500, ApiResponse.Fail(ex.Message));
             }
         }
 
@@ -69,15 +77,18 @@ namespace Gated_System.Controllers
                 var dto = await _service.GetVisitorByIdAsync(id);
                 if (dto == null) return NotFound(new { message = "Visitor not found" });
 
-                return Ok(new { status = true, message = "Visitor fetched", data = dto });
+                //return Ok(new { status = true, message = "Visitor fetched", data = dto });
+                return Ok(ApiResponse.Success("Visitor fetched",dto));
             }
             catch (ApplicationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                //return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.Fail(ex.Message));
             }
             catch (Exception ex)
             {
-                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+                //return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+                return StatusCode(500, ApiResponse.Fail(ex.Message));
             }
         }
 
@@ -87,21 +98,22 @@ namespace Gated_System.Controllers
             try
             {
                 var resultId = await _service.CreatePGMembers(dto);
-                return Ok(new
-                {
-                    status = true,
-                    message = "PG created successfully",
-                    data = new { id = resultId }
-                });
+                return Ok(ApiResponse.Success("PG created successfully", new { id = resultId }));
+                //return Ok(new
+                //{
+                //    status = true,
+                //    message = "PG created successfully",
+                //    data = new { id = resultId }
+                //});
             }
             catch (ApplicationException ex)
             {
-                return BadRequest(new { message = ex.Message });
+                return BadRequest(ApiResponse.Fail(ex.Message));
             }
             catch (Exception ex)
             {
                 // consider logging ex
-                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+                return StatusCode(500, ApiResponse.Fail(ex.Message));
             }
         }
 
@@ -109,7 +121,8 @@ namespace Gated_System.Controllers
         public async Task<IActionResult> GetPGs([FromBody] PGMemberRequest request)
         {
             var result = await _service.GetPGMembersAsync(request);
-            return Ok(new { status = true, message = result.Message, data = result.Data });
+            return Ok(ApiResponse.Success(result.Message,result.Data));
+            //return Ok(new { status = true, message = result.Message, data = result.Data });
         }
 
         [HttpDelete("deletepg")]
@@ -118,7 +131,35 @@ namespace Gated_System.Controllers
             var result = await _service.DeletePGMemberAsync(request);
 
             if (!result.status)
-                return BadRequest(new { status = false, message = result.Message });
+                return BadRequest(ApiResponse.Fail(result.Message));
+                //return BadRequest(new { status = false, message = result.Message });
+
+            return Ok(ApiResponse.Success(result.Message));
+            //return Ok(new { status = true, message = result.Message });
+        }
+
+        [HttpGet("getqrhistory")]
+        public async Task<IActionResult> GetHistory()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+            var request = new QRHistoryRequest { UserId = userId };
+            var result = await _service.GetHistoryAsync(request);
+            return Ok(new { status = true, message = result.Message, data = result.Data });
+        }
+
+        [HttpPost("revokeqr")]
+        public async Task<IActionResult> RevokeQR([FromBody] RevokeQRRequest request)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+            request.UserId= userId;
+
+            var result = await _service.RevokeAsync(request);
+            if (!result.status) return BadRequest(new { status = false, message = result.Message });
 
             return Ok(new { status = true, message = result.Message });
         }

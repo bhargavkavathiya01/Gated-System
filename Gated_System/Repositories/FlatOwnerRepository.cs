@@ -1,6 +1,7 @@
 ﻿using Gated_System.Models;
 using Npgsql;
 using System.Text.Json;
+using static Gated_System.Models.QRModel;
 
 namespace Gated_System.Repositories
 {
@@ -82,6 +83,7 @@ namespace Gated_System.Repositories
                 flatnumber = model.FlatNo,
                 userid = model.UserId,
                 roleid = model.RoleId,
+                guesttype = model.GuestType,
                 createdby = model.CreatedBy
             };
 
@@ -157,6 +159,44 @@ namespace Gated_System.Repositories
             {
                 using var cmd = new NpgsqlCommand(query, _connection);
                 cmd.Parameters.AddWithValue("p_operation", 4);
+                cmd.Parameters.AddWithValue("p_json", JsonSerializer.Serialize(payload));
+
+                var result = await cmd.ExecuteScalarAsync();
+                using var doc = JsonDocument.Parse(result!.ToString()!);
+                return doc.RootElement.GetProperty("status_code").GetInt32() == 200;
+            }
+            finally { await _connection.CloseAsync(); }
+        }
+
+        public async Task<IEnumerable<dynamic>> GetUserQRHistoryAsync(QRHistoryRequest request)
+        {
+            const string query = @"SELECT public.sp_api_managegeneratedqrbyuserid(@p_operation, @p_json)::text;";
+            var payload = new { userid = request.UserId };
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 1);
+                cmd.Parameters.AddWithValue("p_json", JsonSerializer.Serialize(payload));
+
+                var result = await cmd.ExecuteScalarAsync();
+                using var doc = JsonDocument.Parse(result!.ToString()!);
+                return JsonSerializer.Deserialize<IEnumerable<dynamic>>(doc.RootElement.GetProperty("data").GetRawText()) ?? new List<dynamic>();
+            }
+            finally { await _connection.CloseAsync(); }
+        }
+
+        public async Task<bool> RevokeQRAsync(RevokeQRRequest request)
+        {
+            const string query = @"SELECT public.sp_api_managegeneratedqrbyuserid(@p_operation, @p_json)::text;";
+            var payload = new { userid = request.UserId, requestid = request.RequestId };
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 2);
                 cmd.Parameters.AddWithValue("p_json", JsonSerializer.Serialize(payload));
 
                 var result = await cmd.ExecuteScalarAsync();

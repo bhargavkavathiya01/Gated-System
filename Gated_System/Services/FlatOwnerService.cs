@@ -3,6 +3,7 @@ using Gated_System.Models;
 using Gated_System.Repositories;
 using Microsoft.AspNetCore.Mvc;
 using System.Text.Json;
+using static Gated_System.Models.QRModel;
 
 namespace Gated_System.Services
 {
@@ -11,6 +12,13 @@ namespace Gated_System.Services
         private readonly IFlatOwnerRepository _repo;
 
         public FlatOwnerService(IFlatOwnerRepository repo) => _repo = repo;
+
+        public static readonly HashSet<string> AllowedGuestTypes =
+        new(StringComparer.OrdinalIgnoreCase)
+        {
+            "Tenant",
+            "Family"
+        };
 
         //public async Task<CreatedVisitorResult> CreateVisitorAsync(CreateVisitorDto dto)
         //{
@@ -83,18 +91,18 @@ namespace Gated_System.Services
             var token = QrHelper.GenerateToken();
 
             // 2) compute expiry only for time-based (or when provided)
-            DateTime? expiryUtc = null;
+            DateTime? expiryTime = null;
             if (qrType == "time")
             {
                 // default behaviour: if ExpiryMinutes==0 treat as no expiry (or you can require >0)
                 if (dto.ExpiryMinutes > 0)
-                    expiryUtc = DateTime.UtcNow.AddMinutes(dto.ExpiryMinutes);
+                    expiryTime = DateTime.Now.AddMinutes(dto.ExpiryMinutes);
             }
             else
             {
                 // you may still allow expiry for one_time/multi — keep if dto.ExpiryMinutes > 0
                 if ((qrType == "one_time" || qrType == "multi") && dto.ExpiryMinutes > 0)
-                    expiryUtc = DateTime.UtcNow.AddMinutes(dto.ExpiryMinutes);
+                    expiryTime = DateTime.Now.AddMinutes(dto.ExpiryMinutes);
             }
 
             // 3) decide maxUses
@@ -126,7 +134,7 @@ namespace Gated_System.Services
                 flatid = dto.FlatId,
                 requestedby = dto.RequestedBy,
                 qrcode = token,
-                expiry = expiryUtc?.ToString("o"), // "o" is ISO 8601 round-trip (UTC includes Z)
+                expiry = expiryTime?.ToString("o"), // "o" is ISO 8601 round-trip (UTC includes Z)
                 qr_type = qrType,
                 max_uses = maxUses
             };
@@ -142,7 +150,7 @@ namespace Gated_System.Services
                 Id = insertedId,
                 QrToken = token,
                 QrImageBase64 = qrBase64,
-                ExpiryUtc = expiryUtc // nullable: null means no expiry
+                ExpiryUtc = expiryTime // nullable: null means no expiry
             };
         }
 
@@ -183,6 +191,12 @@ namespace Gated_System.Services
             if (dto.FlatNo <= 0) throw new ApplicationException("Invalid FlatNo.");
             if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
             if (dto.RoleId <= 0) throw new ApplicationException("Invalid RoleId.");
+            if (string.IsNullOrWhiteSpace(dto.GuestType) ||!AllowedGuestTypes.Contains(dto.GuestType))
+            {
+                throw new ApplicationException(
+                    "Invalid guest type."
+                );
+            }
 
             var id = await _repo.CreatePGRepoAsync(dto);
 
@@ -200,6 +214,19 @@ namespace Gated_System.Services
             var success = await _repo.DeletePGMemberAsync(request);
             return success ? ServiceResult<bool>.Success(true, "PG member removed successfully.")
                            : ServiceResult<bool>.Fail("Failed to remove PG member. Verify all details.");
+        }
+
+        public async Task<ServiceResult<IEnumerable<dynamic>>> GetHistoryAsync(QRHistoryRequest request)
+        {
+            var data = await _repo.GetUserQRHistoryAsync(request);
+            return ServiceResult<IEnumerable<dynamic>>.Success(data, "QR History retrieved.");
+        }
+
+        public async Task<ServiceResult<bool>> RevokeAsync(RevokeQRRequest request)
+        {
+            var success = await _repo.RevokeQRAsync(request);
+            return success ? ServiceResult<bool>.Success(true, "QR Revoked successfully.")
+                           : ServiceResult<bool>.Fail("Failed to revoke QR. It may already be revoked or expired.");
         }
     }
 }

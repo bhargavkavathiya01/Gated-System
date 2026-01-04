@@ -42,6 +42,13 @@ namespace Gated_System.Services
             int? maxUses = item.TryGetProperty("max_uses", out var mu) && mu.ValueKind != JsonValueKind.Null ? mu.GetInt32() : null;
             DateTime? expiry = item.TryGetProperty("expiry", out var ex) && ex.ValueKind != JsonValueKind.Null ? ex.GetDateTime() : null;
 
+            var qrPropertyId = item.GetProperty("propertyid").GetInt32();
+
+            if (qrPropertyId != req.PropertyId)
+            {
+                throw new ApplicationException("Invalid QR for this society.");
+            }
+
             string nextStatus = "Active";
 
             if (expiry.HasValue && expiry.Value < DateTime.Now)
