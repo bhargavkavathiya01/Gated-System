@@ -205,5 +205,37 @@ namespace Gated_System.Repositories
             }
             finally { await _connection.CloseAsync(); }
         }
+
+        public async Task<string> SaveDeviceTokenRepoAsync(UserDeviceTokenModel model)
+        {
+            const string query = @"SELECT public.sp_api_userdevicetoken(@p_json)::text;";
+
+            var payload = new
+            {
+                userid = model.UserId,
+                devicetoken = model.DeviceToken,
+                platform = model.Platform
+            };
+
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_json", (object)jsonPayload ?? DBNull.Value);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+
+                if (scalarResult is null || scalarResult is DBNull)
+                    throw new Exception("Stored procedure returned null/empty result.");
+
+                return scalarResult.ToString()!;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
     }
 }

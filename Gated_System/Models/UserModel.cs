@@ -33,6 +33,7 @@
         public string Lastname { get; set; } = "";
         public string Email { get; set; } = "";
         public string Phone { get; set; } = "";
+        public string? PermanentQR { get; set; } = "";
     }
 
     public class RegisterModel
@@ -98,6 +99,13 @@
     public class ForgotPasswordRequest
     {
         public string Email { get; set; } = string.Empty;
+    }
+
+    public class UserDeviceTokenModel
+    {
+        public int UserId { get; set; }
+        public string DeviceToken { get; set; } = string.Empty;
+        public string Platform { get; set; } = string.Empty;
     }
 
     public class PGMemberRequest

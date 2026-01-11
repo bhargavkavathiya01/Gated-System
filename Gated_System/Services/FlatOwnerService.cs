@@ -188,7 +188,7 @@ namespace Gated_System.Services
             // Basic validation
             if (dto.PropertyId <= 0) throw new ApplicationException("Invalid PropertyId.");
             if (dto.BuildingId <= 0) throw new ApplicationException("Invalid BuildingId.");
-            if (dto.FlatNo <= 0) throw new ApplicationException("Invalid FlatNo.");
+            if (dto.FlatNo == null) throw new ApplicationException("Invalid FlatNo.");
             if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
             if (dto.RoleId <= 0) throw new ApplicationException("Invalid RoleId.");
             if (string.IsNullOrWhiteSpace(dto.GuestType) ||!AllowedGuestTypes.Contains(dto.GuestType))
@@ -199,6 +199,32 @@ namespace Gated_System.Services
             }
 
             var id = await _repo.CreatePGRepoAsync(dto);
+
+            // Create a permanent QR for this PG member (mirror flat owner behavior)
+            try
+            {
+                var token = QrHelper.GenerateToken();
+
+                var visitorPayload = new
+                {
+                    visitorname = "Self",
+                    phone = "",
+                    purpose = "Permanent QR for PG member",
+                    propertyid = dto.PropertyId,
+                    buildingid = dto.BuildingId,
+                    flatid = dto.FlatNo,
+                    userid = dto.UserId,
+                    qrcode = token,
+                    qr_type = "unlimited",
+                    flatownerid = dto.UserId
+                };
+
+                await _repo.CreateVisitorRequestAsync(visitorPayload);
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("PG member created but failed to create permanent QR: " + ex.Message);
+            }
 
             return id;
         }
@@ -227,6 +253,29 @@ namespace Gated_System.Services
             var success = await _repo.RevokeQRAsync(request);
             return success ? ServiceResult<bool>.Success(true, "QR Revoked successfully.")
                            : ServiceResult<bool>.Fail("Failed to revoke QR. It may already be revoked or expired.");
+        }
+
+        public async Task RegisterDeviceTokenAsync(UserDeviceTokenModel dto)
+        {
+            // Basic validation
+            if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
+            if (string.IsNullOrWhiteSpace(dto.DeviceToken)) throw new ApplicationException("Device token is required.");
+            if (string.IsNullOrWhiteSpace(dto.Platform)) throw new ApplicationException("Platform is required.");
+
+            // Call Repository
+            var resultJson = await _repo.SaveDeviceTokenRepoAsync(dto);
+
+            // Parse wrapper
+            using var doc = JsonDocument.Parse(resultJson);
+            var root = doc.RootElement;
+
+            var status = root.GetProperty("status_code").GetInt32();
+            var message = root.TryGetProperty("message", out var m) ? m.GetString() : "Unknown error";
+
+            if (status != 200)
+            {
+                throw new ApplicationException(message);
+            }
         }
     }
 }

@@ -7,7 +7,7 @@
         public string Purpose { get; set; } = "";
         public int PropertyId { get; set; }
         public int BuildingId { get; set; }
-        public int FlatId { get; set; }
+        public string FlatId { get; set; }
         public int RequestedBy { get; set; }
         public int ExpiryMinutes { get; set; } = 60;
         public string QrType { get; set; } = "time"; // "time" or "one_time"

@@ -13,5 +13,6 @@ namespace Gated_System.Repositories
         Task<bool> DeletePGMemberAsync(DeletePGRequest request);
         Task<IEnumerable<dynamic>> GetUserQRHistoryAsync(QRHistoryRequest request);
         Task<bool> RevokeQRAsync(RevokeQRRequest request);
+        Task<string> SaveDeviceTokenRepoAsync(UserDeviceTokenModel model);
     }
 }

@@ -1,4 +1,5 @@
-﻿using Gated_System.Models;
+﻿using Gated_System.Helpers;
+using Gated_System.Models;
 using Gated_System.Repositories;
 
 namespace Gated_System.Services
@@ -6,10 +7,12 @@ namespace Gated_System.Services
     public class BuilderService : IBuilderService
     {
         private readonly IBuilderRepository _repo;
+        private readonly IFlatOwnerRepository _flatownerRepo;
 
-        public BuilderService(IBuilderRepository repo)
+        public BuilderService(IBuilderRepository repo , IFlatOwnerRepository flatownerRepo)
         {
             _repo = repo;
+            _flatownerRepo = flatownerRepo;
         }
 
         public async Task<IEnumerable<RoleModel>> GetRolesAsync()
@@ -33,11 +36,37 @@ namespace Gated_System.Services
             // Basic validation
             if (dto.PropertyId <= 0) throw new ApplicationException("Invalid PropertyId.");
             if (dto.BuildingId <= 0) throw new ApplicationException("Invalid BuildingId.");
-            if (dto.FlatNo <= 0) throw new ApplicationException("Invalid FlatNo.");
+            if (dto.FlatNo == null) throw new ApplicationException("Invalid FlatNo.");
             if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
             if (dto.RoleId <= 0) throw new ApplicationException("Invalid RoleId.");
 
             var id = await _repo.CreateFlatOwnerRepoAsync(dto);
+
+            // Create a permanent QR for this PG member (mirror flat owner behavior)
+            try
+            {
+                var token = QrHelper.GenerateToken();
+
+                var visitorPayload = new
+                {
+                    visitorname = "Self",
+                    phone = "",
+                    purpose = "Permanent QR for flat owner",
+                    propertyid = dto.PropertyId,
+                    buildingid = dto.BuildingId,
+                    flatid = dto.FlatNo,
+                    userid = dto.UserId,
+                    qrcode = token,
+                    qr_type = "unlimited",
+                    flatownerid = dto.UserId
+                };
+
+                await _flatownerRepo.CreateVisitorRequestAsync(visitorPayload);
+            }
+            catch (Exception ex)
+            {
+                throw new ApplicationException("PG member created but failed to create permanent QR: " + ex.Message);
+            }
 
             return id;
         }

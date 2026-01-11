@@ -97,6 +97,10 @@ namespace Gated_System.Controllers
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+                dto.CreatedBy = userId;
                 var resultId = await _service.CreatePGMembers(dto);
                 return Ok(ApiResponse.Success("PG created successfully", new { id = resultId }));
                 //return Ok(new
@@ -162,6 +166,32 @@ namespace Gated_System.Controllers
             if (!result.status) return BadRequest(new { status = false, message = result.Message });
 
             return Ok(new { status = true, message = result.Message });
+        }
+
+        [HttpPost("registerToken")]
+        public async Task<IActionResult> RegisterToken([FromBody] UserDeviceTokenModel dto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+                // Attach current user id from token to the DTO
+                dto.UserId = userId;
+
+                await _service.RegisterDeviceTokenAsync(dto);
+
+                return Ok(ApiResponse.Success("Device token registered successfully", null));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ApiResponse.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail("Internal Server Error: " + ex.Message));
+            }
         }
     }
 }

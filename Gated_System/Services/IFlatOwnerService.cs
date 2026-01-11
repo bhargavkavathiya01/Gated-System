@@ -12,5 +12,6 @@ namespace Gated_System.Services
         Task<ServiceResult<bool>> DeletePGMemberAsync(DeletePGRequest request);
         Task<ServiceResult<IEnumerable<dynamic>>> GetHistoryAsync(QRHistoryRequest request);
         Task<ServiceResult<bool>> RevokeAsync(RevokeQRRequest request);
+        Task RegisterDeviceTokenAsync(UserDeviceTokenModel dto);
     }
 }

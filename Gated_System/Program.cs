@@ -171,10 +171,12 @@
 
 
 
+using FirebaseAdmin;
 using Gated_System.Helpers;
 //using Gated_System.Hub;
 using Gated_System.Repositories;
 using Gated_System.Services;
+using Google.Apis.Auth.OAuth2;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Diagnostics;
@@ -184,6 +186,8 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using Npgsql;
 using System.Text;
+using FirebaseAdmin;
+using Google.Apis.Auth.OAuth2;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -280,6 +284,11 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
             }
         };
     });
+
+FirebaseApp.Create(new AppOptions
+{
+    Credential = GoogleCredential.FromFile("firebase-service-account.json")
+});
 
 // PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("Default")

@@ -210,6 +210,7 @@ namespace Gated_System.Repositories
                 : data.GetProperty("middlename").GetString() ?? "",
                     Lastname = data.GetProperty("lastname").GetString() ?? "",
                     Email = data.GetProperty("email").GetString() ?? "",
+                    PermanentQR = data.GetProperty("permanentQR").GetString() ?? "",
                     Phone = data.GetProperty("phone").ValueKind == JsonValueKind.Null
                 ? ""
                 : data.GetProperty("phone").GetString() ?? ""

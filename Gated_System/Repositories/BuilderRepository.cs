@@ -2,6 +2,7 @@
 using Npgsql;
 using System.Text.Json;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
+using Gated_System.Helpers;
 
 namespace Gated_System.Repositories
 {
@@ -156,6 +157,60 @@ namespace Gated_System.Repositories
                     throw new Exception("Unexpected response from User Role: missing data.id");
 
                 var id = idEl.GetInt32();
+
+                // -------------------------------------------------------
+                // Create a permanent QR for the flat owner user
+                // -------------------------------------------------------
+                //try
+                //{
+                //    // generate token
+                //    var token = QrHelper.GenerateToken();
+
+                //    // prepare visitor payload for permanent QR
+                //    var visitorPayload = new
+                //    {
+                //        visitorname = "Self",
+                //        phone = "",
+                //        purpose = "Permanent QR for flat owner",
+                //        propertyid = model.PropertyId,
+                //        buildingid = model.BuildingId,
+                //        flatid = model.FlatNo,
+                //        userid = model.UserId,
+                //        qrcode = token,
+                //        qr_type = "unlimited",
+                //        flatownerid = model.UserId
+                //    };
+
+                //    var visitorJson = JsonSerializer.Serialize(visitorPayload);
+                //    const string visitorFn = @"SELECT public.sp_api_visitorrequest(@p_operation, @p_json)::text;";
+
+                //    using var vcmd = new NpgsqlCommand(visitorFn, _connection);
+                //    vcmd.Parameters.AddWithValue("p_operation", 2);
+                //    vcmd.Parameters.AddWithValue("p_json", (object)visitorJson ?? DBNull.Value);
+
+                //    var vScalar = await vcmd.ExecuteScalarAsync();
+                //    if (vScalar is null || vScalar is DBNull)
+                //        throw new ApplicationException("Failed to create permanent QR: empty result from visitor SP.");
+
+                //    var vResultJson = vScalar.ToString();
+                //    using var vdoc = JsonDocument.Parse(vResultJson);
+                //    var vroot = vdoc.RootElement;
+
+                //    var vStatus = vroot.GetProperty("status_code").GetInt32();
+                //    if (vStatus != 201)
+                //    {
+                //        var vmsg = vroot.TryGetProperty("message", out var vm) ? vm.GetString() : "Failed to create permanent QR";
+                //        throw new ApplicationException(vmsg ?? "Failed to create permanent QR");
+                //    }
+
+                //    // QR created successfully; we ignore the returned id here.
+                //}
+                //catch (Exception ex)
+                //{
+                //    // If QR creation fails, surface the error so caller knows.
+                //    throw new ApplicationException("Flat owner created but failed to create permanent QR: " + ex.Message);
+                //}
+
                 return id;
             }
             finally
