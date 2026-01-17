@@ -76,7 +76,6 @@ namespace Gated_System.Repositories
 
         /// <summary>
         /// Get messages for a specific chat with paging.
-        /// Uses sp_api_groupchatmessages with operation = 1.
         /// </summary>
         public async Task<IEnumerable<ChatMessageModel>> GetMessagesAsync(GetChatFeedRequest request)
         {
@@ -111,14 +110,14 @@ namespace Gated_System.Repositories
                 var root = doc.RootElement;
 
                 if (!root.TryGetProperty("status_code", out var statusEl))
-                    throw new Exception("sp_api_groupchatmessages: missing status_code");
+                    throw new Exception("missing status_code");
 
                 var statusCode = statusEl.GetInt32();
                 if (statusCode != 200)
                 {
                     var msg = root.TryGetProperty("message", out var msgEl)
                         ? msgEl.GetString()
-                        : "Unknown error from sp_api_groupchatmessages (op=1)";
+                        : "Unknown error from group chat messages (op=1)";
                     throw new ApplicationException($"GetMessages failed. Status: {statusCode}, Message: {msg}");
                 }
 
@@ -149,7 +148,6 @@ namespace Gated_System.Repositories
 
         /// <summary>
         /// Add a new message to a chat.
-        /// Uses sp_api_groupchatmessages with operation = 2.
         /// </summary>
         public async Task<ChatMessageModel> AddMessageAsync(int chatId, int userId, string message)
         {
@@ -174,26 +172,26 @@ namespace Gated_System.Repositories
                 var scalarResult = await cmd.ExecuteScalarAsync();
 
                 if (scalarResult is null || scalarResult is DBNull)
-                    throw new Exception("sp_api_groupchatmessages returned null/empty result for insert.");
+                    throw new Exception("returned null/empty result for insert.");
 
                 var resultJson = scalarResult.ToString()!;
                 using var doc = JsonDocument.Parse(resultJson);
                 var root = doc.RootElement;
 
                 if (!root.TryGetProperty("status_code", out var statusEl))
-                    throw new Exception("sp_api_groupchatmessages: missing status_code");
+                    throw new Exception("missing status_code");
 
                 var statusCode = statusEl.GetInt32();
                 if (statusCode != 201)
                 {
                     var msg = root.TryGetProperty("message", out var msgEl)
                         ? msgEl.GetString()
-                        : "Unknown error from sp_api_groupchatmessages (op=2)";
+                        : "Unknown error from group chat messages (op=2)";
                     throw new ApplicationException($"AddMessage failed. Status: {statusCode}, Message: {msg}");
                 }
 
                 if (!root.TryGetProperty("data", out var dataEl))
-                    throw new Exception("sp_api_groupchatmessages: missing data for insert");
+                    throw new Exception("missing data for insert");
 
                 // Compose ChatMessageModel from returned data
                 var model = new ChatMessageModel
@@ -664,6 +662,117 @@ namespace Gated_System.Repositories
             {
                 await _connection.CloseAsync();
             }
+        }
+
+        /// <summary>
+        /// Get user IDs of all members in a chat group.
+        /// Uses sp_api_groupchatmaster with operation = 7 to get chat members.
+        /// </summary>
+        public async Task<List<int>> GetChatMemberUserIdsAsync(int chatId)
+        {
+            const string query = @"SELECT public.sp_api_groupchatmaster(@p_operation, @p_json)::text;";
+
+            var payload = new { chatid = chatId };
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 7); // get chat members
+                cmd.Parameters.AddWithValue("p_json", (object)jsonPayload ?? DBNull.Value);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+                if (scalarResult is null || scalarResult is DBNull)
+                    return new List<int>();
+
+                var resultJson = scalarResult.ToString()!;
+                using var doc = JsonDocument.Parse(resultJson);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("status_code", out var statusEl))
+                    return new List<int>();
+
+                var statusCode = statusEl.GetInt32();
+                if (statusCode != 200)
+                    return new List<int>();
+
+                if (!root.TryGetProperty("data", out var dataEl) || dataEl.ValueKind != JsonValueKind.Array)
+                    return new List<int>();
+
+                var userIds = new List<int>();
+                foreach (var item in dataEl.EnumerateArray())
+                {
+                    if (item.TryGetProperty("userid", out var userIdEl) && userIdEl.ValueKind == JsonValueKind.Number)
+                    {
+                        userIds.Add(userIdEl.GetInt32());
+                    }
+                }
+
+                return userIds;
+            }
+            catch (Exception)
+            {
+                // Log error if needed
+                return new List<int>();
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        /// <summary>
+        /// Get FCM tokens for a list of user IDs from usermaster table.
+        /// Returns only non-null, non-empty tokens.
+        /// Note: Assumes the column name is 'fcmtoken' in usermaster table.
+        /// If your column name is different (e.g., 'fcm_token'), update the query accordingly.
+        /// </summary>
+        public async Task<List<string>> GetFcmTokensForUserIdsAsync(List<int> userIds)
+        {
+            if (userIds == null || userIds.Count == 0)
+                return new List<string>();
+
+            // Note: If your FCM token column has a different name, update 'fcmtoken' here
+            const string query = @"
+                SELECT DISTINCT fcmtoken 
+                FROM usermaster 
+                WHERE userid = ANY(:userIds) 
+                AND fcmtoken IS NOT NULL 
+                AND fcmtoken != '';";
+
+            var tokens = new List<string>();
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("userIds", userIds.ToArray());
+
+                using var reader = await cmd.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
+                {
+                    if (!reader.IsDBNull(0))
+                    {
+                        var token = reader.GetString(0);
+                        if (!string.IsNullOrWhiteSpace(token))
+                        {
+                            tokens.Add(token);
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                // Log error if needed
+                return new List<string>();
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+
+            return tokens;
         }
     }
 }

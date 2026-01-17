@@ -95,5 +95,18 @@ namespace Gated_System.Services
                 Items = feed
             };
         }
+
+        public async Task<List<int>> GetChatMemberUserIdsAsync(int chatId)
+        {
+            if (chatId <= 0) throw new ArgumentException("Invalid chatId");
+            return await _repo.GetChatMemberUserIdsAsync(chatId);
+        }
+
+        public async Task<List<string>> GetFcmTokensForUserIdsAsync(List<int> userIds)
+        {
+            if (userIds == null || userIds.Count == 0)
+                return new List<string>();
+            return await _repo.GetFcmTokensForUserIdsAsync(userIds);
+        }
     }
 }

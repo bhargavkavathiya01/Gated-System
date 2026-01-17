@@ -80,5 +80,36 @@ namespace Gated_System.Controllers
                 message = result.Message
             });
         }
+
+        [HttpPost("update-fcm-token")]
+        public async Task<IActionResult> UpdateFcmToken([FromBody] UpdateFcmTokenModel model)
+        {
+            int currentUserId = GetCurrentUserId();
+            if (currentUserId == -1)
+                return Unauthorized(new { status = false, message = "Invalid or expired token", data = new { } });
+
+            // Set user ID from token for security
+            model.UserId = currentUserId;
+            model.ModifiedBy = currentUserId;
+
+            var result = await _userService.UpdateFcmTokenAsync(model);
+
+            if (!result.status)
+            {
+                return BadRequest(new
+                {
+                    status = false,
+                    message = result.Message,
+                    data = new { }
+                });
+            }
+
+            return Ok(new
+            {
+                status = true,
+                message = result.Message,
+                data = new { }
+            });
+        }
     }
 }

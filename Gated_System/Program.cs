@@ -170,7 +170,6 @@
 
 
 
-
 using FirebaseAdmin;
 using Gated_System.Helpers;
 //using Gated_System.Hub;
@@ -196,6 +195,9 @@ var builder = WebApplication.CreateBuilder(args);
 // ------------------
 
 builder.Services.AddControllers();
+
+// Register PushNotificationHelper
+builder.Services.AddScoped<PushNotificationHelper>();
 
 // Swagger / OpenAPI
 builder.Services.AddEndpointsApiExplorer();
@@ -285,6 +287,8 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
+// Initialize FirebaseApp using service account json file placed in project root (firebase-service-account.json).
+// Ensure the file is deployed and path correct. You already added the JSON file.
 FirebaseApp.Create(new AppOptions
 {
     Credential = GoogleCredential.FromFile("firebase-service-account.json")
@@ -355,7 +359,8 @@ app.UseSwaggerUI(c =>
     c.SwaggerEndpoint("/swagger/v1/swagger.json", "API v1");
 });
 
-app.UseCors("AllowAll");
+//app.UseCors("AllowAll");
+app.UseCors(policy => policy.AllowAnyHeader().AllowAnyMethod().AllowCredentials().SetIsOriginAllowed(_ => true));
 
 app.UseHttpsRedirection();
 

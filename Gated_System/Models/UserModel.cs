@@ -96,6 +96,13 @@
         public int ModifiedBy { get; set; }
     }
 
+    public class UpdateFcmTokenModel
+    {
+        public int UserId { get; set; }
+        public string FcmToken { get; set; } = string.Empty;
+        public int ModifiedBy { get; set; }
+    }
+
     public class ForgotPasswordRequest
     {
         public string Email { get; set; } = string.Empty;

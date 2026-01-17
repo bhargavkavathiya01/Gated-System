@@ -72,5 +72,38 @@ namespace Gated_System.Services
                 return ServiceResult<bool>.Fail($"Error: {ex.Message}");
             }
         }
+
+        public async Task<ServiceResult<bool>> UpdateFcmTokenAsync(UpdateFcmTokenModel model)
+        {
+            try
+            {
+                // Validate input
+                if (model.UserId <= 0)
+                    return ServiceResult<bool>.Fail("Invalid UserId");
+
+                if (string.IsNullOrWhiteSpace(model.FcmToken))
+                    return ServiceResult<bool>.Fail("FCM token is required");
+
+                // Verify user exists before updating
+                var existingUser = await _authRepo.GetByIdAsync(model.UserId);
+                if (existingUser == null)
+                    return ServiceResult<bool>.Fail("User not found");
+
+                // Update FCM token
+                var success = await _userRepo.UpdateFcmTokenAsync(model);
+
+                return success
+                    ? ServiceResult<bool>.Success(true, "FCM token updated successfully")
+                    : ServiceResult<bool>.Fail("Failed to update FCM token");
+            }
+            catch (ApplicationException ex)
+            {
+                return ServiceResult<bool>.Fail(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                return ServiceResult<bool>.Fail($"Error updating FCM token: {ex.Message}");
+            }
+        }
     }
 }

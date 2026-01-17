@@ -65,10 +65,12 @@ using System.Text.RegularExpressions;
 public class ChatHub : Hub
 {
     private readonly IChatService _chatService;
+    private readonly PushNotificationHelper _pushNotificationHelper;
 
-    public ChatHub(IChatService chatService)
+    public ChatHub(IChatService chatService, PushNotificationHelper pushNotificationHelper)
     {
         _chatService = chatService;
+        _pushNotificationHelper = pushNotificationHelper;
     }
 
     private static string GroupName(int chatId) => $"chat-{chatId}";
@@ -100,14 +102,56 @@ public class ChatHub : Hub
 
             var saved = await _chatService.AddMessageAsync(request.ChatId, userId, request.Message);
 
-            // Send the message to all clients in the group
+            // Send response in same format as API
             await Clients.Group(GroupName(request.ChatId)).SendAsync("ReceiveMessage", new
             {
-                id = saved.Id,
-                chatId = saved.ChatId,
-                userId = saved.UserId,
-                message = saved.Message,
-                createdOn = saved.CreatedOn
+                status = true,
+                message = "Message sent successfully",
+                data = saved
+            });
+
+            // Send push notifications to chat members (excluding sender)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var memberUserIds = await _chatService.GetChatMemberUserIdsAsync(request.ChatId);
+                    // Exclude the sender
+                    var recipientUserIds = memberUserIds.Where(id => id != userId).ToList();
+                    
+                    if (recipientUserIds.Any())
+                    {
+                        var fcmTokens = await _chatService.GetFcmTokensForUserIdsAsync(recipientUserIds);
+                        
+                        if (fcmTokens.Any())
+                        {
+                            // Truncate message for notification body
+                            var messagePreview = request.Message.Length > 100 
+                                ? request.Message.Substring(0, 100) + "..." 
+                                : request.Message;
+
+                            var data = new Dictionary<string, string>
+                            {
+                                { "type", "message" },
+                                { "chatId", request.ChatId.ToString() },
+                                { "messageId", saved.Id.ToString() },
+                                { "userId", userId.ToString() }
+                            };
+
+                            await _pushNotificationHelper.SendToDevicesAsync(
+                                fcmTokens,
+                                "New Message",
+                                messagePreview,
+                                data
+                            );
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    // Log error but don't fail the message send
+                    Console.WriteLine($"Error sending push notification for message: {ex.Message}");
+                }
             });
         }
         catch (Exception ex)
@@ -148,19 +192,82 @@ public class ChatHub : Hub
 
         var pollId = await _chatService.CreatePollAsync(userId, request);
 
-        await Clients.Group(GroupName(request.ChatId))
-            .SendAsync("PollCreated", new
+        //await Clients.Group(GroupName(request.ChatId))
+        //   .SendAsync("PollCreated", new
+        //   {
+        //       type = "poll",
+        //       pollId = pollId,
+        //       chatId = request.ChatId,
+        //       question = request.Question,
+        //       allowsMultiple = request.AllowsMultiple,
+        //       expiresAt = request.ExpiresAt,
+        //       createdBy = userId,
+        //       createdOn = DateTime.Now,
+        //       options = request.Options
+        //   });
+        // Fetch the complete poll data (same as API response)
+        var pollData = await _chatService.GetPollByPollIdAsync(pollId, userId);
+
+        if (pollData != null)
+        {
+            // Send response in same format as API
+            await Clients.Group(GroupName(request.ChatId))
+                .SendAsync("PollCreated", new
+                {
+                    status = true,
+                    message = "Poll Created Successfully",
+                    data = pollData
+                });
+        }
+        else
+        {
+            // Fallback if poll fetch fails
+            await Clients.Caller.SendAsync("Error", "Poll created but failed to fetch poll data.");
+        }
+
+        // Send push notifications to chat members (excluding creator)
+        _ = Task.Run(async () =>
+        {
+            try
             {
-                type = "poll",
-                pollId = pollId,
-                chatId = request.ChatId,
-                question = request.Question,
-                allowsMultiple = request.AllowsMultiple,
-                expiresAt = request.ExpiresAt,
-                createdBy = userId,
-                createdOn = DateTime.Now,
-                options = request.Options
-            });
+                var memberUserIds = await _chatService.GetChatMemberUserIdsAsync(request.ChatId);
+                // Exclude the poll creator
+                var recipientUserIds = memberUserIds.Where(id => id != userId).ToList();
+                
+                if (recipientUserIds.Any())
+                {
+                    var fcmTokens = await _chatService.GetFcmTokensForUserIdsAsync(recipientUserIds);
+                    
+                    if (fcmTokens.Any())
+                    {
+                        // Truncate question for notification body
+                        var questionPreview = request.Question.Length > 100 
+                            ? request.Question.Substring(0, 100) + "..." 
+                            : request.Question;
+
+                        var data = new Dictionary<string, string>
+                        {
+                            { "type", "poll" },
+                            { "chatId", request.ChatId.ToString() },
+                            { "pollId", pollId.ToString() },
+                            { "createdBy", userId.ToString() }
+                        };
+
+                        await _pushNotificationHelper.SendToDevicesAsync(
+                            fcmTokens,
+                            "New Poll",
+                            questionPreview,
+                            data
+                        );
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                // Log error but don't fail the poll creation
+                Console.WriteLine($"Error sending push notification for poll: {ex.Message}");
+            }
+        });
     }
 
     // =======================
@@ -188,19 +295,35 @@ public class ChatHub : Hub
             request.OptionIds
         );
 
-        // Fetch updated poll result
+        // Fetch updated poll result (same as API response)
         var pollResult = await _chatService.GetPollByPollIdAsync(
             request.PollId,
             userId
         );
 
-        await Clients.Group(GroupName(request.ChatId))
-            .SendAsync("PollVoted", new
-            {
-                type = "pollVote",
-                pollId = request.PollId,
-                updatedPoll = pollResult
-            });
+        //await Clients.Group(GroupName(request.ChatId))
+        //    .SendAsync("PollVoted", new
+        //    {
+        //        type = "pollVote",
+        //        pollId = request.PollId,
+        //        updatedPoll = pollResult
+        //    });
+
+        if (pollResult != null)
+        {
+            // Send response in same format as API
+            await Clients.Group(GroupName(request.ChatId))
+                .SendAsync("PollVoted", new
+                {
+                    status = true,
+                    message = "Vote Recorded Successfully",
+                    data = pollResult
+                });
+        }
+        else
+        {
+            await Clients.Caller.SendAsync("Error", "Vote recorded but failed to fetch updated poll data.");
+        }
     }
 
     // =======================

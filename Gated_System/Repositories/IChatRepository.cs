@@ -15,5 +15,7 @@ namespace Gated_System.Repositories
         Task VoteAsync(int pollId, int userId, IEnumerable<int> optionIds);
         Task<List<object>> GetChatFeedAsync(int chatId,int userId,int skip,int take);
         Task<ChatPollFeedModel?> GetPollByPollIdAsync(int pollId, int userId);
+        Task<List<int>> GetChatMemberUserIdsAsync(int chatId);
+        Task<List<string>> GetFcmTokensForUserIdsAsync(List<int> userIds);
     }
 }

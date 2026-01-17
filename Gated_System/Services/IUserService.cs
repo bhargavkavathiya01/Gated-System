@@ -6,5 +6,6 @@ namespace Gated_System.Services
     {
         Task<ServiceResult<bool>> UpdateProfileAsync(UserModel dto);
         Task<ServiceResult<bool>> ResetPasswordAsync(ResetPasswordRequest request);
+        Task<ServiceResult<bool>> UpdateFcmTokenAsync(UpdateFcmTokenModel model);
     }
 }
