@@ -107,5 +107,23 @@ namespace Gated_System.Services
                 return ServiceResult<PropertyMemberDetailsResponse>.Fail(ex.Message);
             }
         }
+
+        public async Task<int> CreateFlatOwnerRequestAsync(CreateFlatOwnerRequestModel dto)
+        {
+            // Basic validation
+            if (dto.PropertyId <= 0) throw new ApplicationException("Invalid PropertyId.");
+            if (dto.BuildingId <= 0) throw new ApplicationException("Invalid BuildingId.");
+            if (dto.FlatNo == null) throw new ApplicationException("Invalid FlatNo.");
+            if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
+            if (dto.RoleId <= 0) throw new ApplicationException("Invalid RoleId.");
+
+            var id = await _repo.CreateFlatOwnerRequestAsync(dto);
+            return id;
+        }
+
+        public async Task<IEnumerable<FlatOwnerRequestResponseModel>> GetAllFlatOwnerRequestsAsync(string? status = null)
+        {
+            return await _repo.GetAllFlatOwnerRequestsAsync(status);
+        }
     }
 }

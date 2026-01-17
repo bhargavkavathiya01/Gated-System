@@ -107,4 +107,65 @@
         public string Phone { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
     }
+
+    public class FlatOwnerRequestModel
+    {
+        public int Id { get; set; }
+        public int PropertyId { get; set; }
+        public int BuildingId { get; set; }
+        public string FlatNumber { get; set; } = null!;
+        public int UserId { get; set; }
+        public int RoleId { get; set; }
+        public string? GuestType { get; set; }
+        public int RequestedBy { get; set; }
+        public string Status { get; set; } = "Pending";
+        public int? ApprovedBy { get; set; }
+        public DateTime? ApprovedOn { get; set; }
+        public string? RejectionReason { get; set; }
+        public DateTime CreatedOn { get; set; }
+    }
+
+    public class CreateFlatOwnerRequestModel
+    {
+        public int PropertyId { get; set; }
+        public int BuildingId { get; set; }
+        public string FlatNo { get; set; } = null!;
+        public int UserId { get; set; }
+        public int RoleId { get; set; }
+        public string? GuestType { get; set; }
+        public int RequestedBy { get; set; } // Builder Id
+    }
+
+    public class FlatOwnerRequestResponseModel
+    {
+        public int Id { get; set; }
+        public int PropertyId { get; set; }
+        public string PropertyName { get; set; } = "";
+        public int BuildingId { get; set; }
+        public string BuildingName { get; set; } = "";
+        public string FlatNumber { get; set; } = "";
+        public int UserId { get; set; }
+        public string UserFirstName { get; set; } = "";
+        public string UserLastName { get; set; } = "";
+        public string UserEmail { get; set; } = "";
+        public string UserPhone { get; set; } = "";
+        public int RoleId { get; set; }
+        public string RoleName { get; set; } = "";
+        public string? GuestType { get; set; }
+        public int RequestedBy { get; set; }
+        public string RequestedByName { get; set; } = "";
+        public string Status { get; set; } = "";
+        public int? ApprovedBy { get; set; }
+        public string? ApprovedByName { get; set; }
+        public DateTime? ApprovedOn { get; set; }
+        public string? RejectionReason { get; set; }
+        public DateTime CreatedOn { get; set; }
+    }
+
+    public class ApproveFlatOwnerRequestModel
+    {
+        public int RequestId { get; set; }
+        public string Action { get; set; } = "Approved"; // "Approved" or "Rejected"
+        public string? RejectionReason { get; set; }
+    }
 }

@@ -11,5 +11,7 @@ namespace Gated_System.Services
         Task<List<UserListResponseModel>> GetAllUsersAsync();
         Task<UserResponseModel?> GetUserByEmailOrPhoneAsync(string user);
         Task<ServiceResult<PropertyMemberDetailsResponse>> GetMemberDetailsAsync(PropertyMemberRequest request);
+        Task<int> CreateFlatOwnerRequestAsync(CreateFlatOwnerRequestModel dto);
+        Task<IEnumerable<FlatOwnerRequestResponseModel>> GetAllFlatOwnerRequestsAsync(string? status = null);
     }
 }

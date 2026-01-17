@@ -11,5 +11,9 @@ namespace Gated_System.Repositories
         Task<List<UserListResponseModel>> GetAllUsersAsync();
         Task<UserResponseModel?> GetUserByEmailOrPhoneAsync(string user);
         Task<PropertyMemberDetailsResponse?> GetPropertyMemberDetailsAsync(PropertyMemberRequest request);
+        Task<int> CreateFlatOwnerRequestAsync(CreateFlatOwnerRequestModel model);
+        Task<IEnumerable<FlatOwnerRequestResponseModel>> GetAllFlatOwnerRequestsAsync(string? status = null);
+        Task<bool> UpdateFlatOwnerRequestStatusAsync(int requestId, string status, int approvedBy, string? rejectionReason);
+        Task<FlatOwnerRequestResponseModel?> GetFlatOwnerRequestByIdAsync(int requestId);
     }
 }

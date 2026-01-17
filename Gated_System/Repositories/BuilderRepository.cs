@@ -3,6 +3,7 @@ using Npgsql;
 using System.Text.Json;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 using Gated_System.Helpers;
+using NpgsqlTypes;
 
 namespace Gated_System.Repositories
 {
@@ -414,6 +415,236 @@ namespace Gated_System.Repositories
                 var options = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
 
                 return JsonSerializer.Deserialize<PropertyMemberDetailsResponse>(dataJson, options);
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task<int> CreateFlatOwnerRequestAsync(CreateFlatOwnerRequestModel model)
+        {
+            const string query = @"SELECT public.sp_api_flatownerrequest(@p_operation, @p_json)::text;";
+
+            var payload = new
+            {
+                propertyid = model.PropertyId,
+                buildingid = model.BuildingId,
+                flatnumber = model.FlatNo,
+                userid = model.UserId,
+                roleid = model.RoleId,
+                guesttype = model.GuestType,
+                requestedby = model.RequestedBy
+            };
+
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 2);
+                cmd.Parameters.AddWithValue("p_json", (object)jsonPayload ?? DBNull.Value);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+
+                if (scalarResult is null || scalarResult is DBNull)
+                    throw new Exception("sp_api_flatownerrequest returned null/empty result.");
+
+                var resultJson = scalarResult.ToString();
+                using var doc = JsonDocument.Parse(resultJson!);
+                var root = doc.RootElement;
+
+                var statusCode = root.GetProperty("status_code").GetInt32();
+                var message = root.GetProperty("message").GetString();
+
+                if (statusCode != 201)
+                    throw new ApplicationException(message ?? "Failed to create flat owner request.");
+
+                if (!root.TryGetProperty("data", out var dataEl) || !dataEl.TryGetProperty("id", out var idEl))
+                    throw new Exception("Unexpected response from sp_api_flatownerrequest: missing data.id");
+
+                var id = idEl.GetInt32();
+                return id;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task<IEnumerable<FlatOwnerRequestResponseModel>> GetAllFlatOwnerRequestsAsync(string? status = null)
+        {
+            const string query = @"SELECT public.sp_api_getflatownerrequests(@p_status)::text;";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_status", status ?? (object)DBNull.Value);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+
+                if (scalarResult is null || scalarResult is DBNull)
+                    return Enumerable.Empty<FlatOwnerRequestResponseModel>();
+
+                var resultJson = scalarResult.ToString();
+                using var doc = JsonDocument.Parse(resultJson!);
+                var root = doc.RootElement;
+
+                var statusCode = root.GetProperty("status_code").GetInt32();
+                if (statusCode != 200)
+                {
+                    var msg = root.TryGetProperty("message", out var m) ? m.GetString() : "Unknown error";
+                    throw new ApplicationException($"Error fetching flat owner requests: {msg}");
+                }
+
+                if (!root.TryGetProperty("data", out var dataEl) || dataEl.ValueKind != JsonValueKind.Array)
+                    return Enumerable.Empty<FlatOwnerRequestResponseModel>();
+
+                var requests = new List<FlatOwnerRequestResponseModel>();
+
+                foreach (var item in dataEl.EnumerateArray())
+                {
+                    requests.Add(new FlatOwnerRequestResponseModel
+                    {
+                        Id = item.GetProperty("id").GetInt32(),
+                        PropertyId = item.GetProperty("propertyid").GetInt32(),
+                        PropertyName = item.TryGetProperty("propertyname", out var pn) ? pn.GetString() ?? "" : "",
+                        BuildingId = item.GetProperty("buildingid").GetInt32(),
+                        BuildingName = item.TryGetProperty("buildingname", out var bn) ? bn.GetString() ?? "" : "",
+                        FlatNumber = item.TryGetProperty("flatnumber", out var fn) ? fn.GetString() ?? "" : "",
+                        UserId = item.GetProperty("userid").GetInt32(),
+                        UserFirstName = item.TryGetProperty("userfirstname", out var ufn) ? ufn.GetString() ?? "" : "",
+                        UserLastName = item.TryGetProperty("userlastname", out var uln) ? uln.GetString() ?? "" : "",
+                        UserEmail = item.TryGetProperty("useremail", out var ue) ? ue.GetString() ?? "" : "",
+                        UserPhone = item.TryGetProperty("userphone", out var up) ? up.GetString() ?? "" : "",
+                        RoleId = item.GetProperty("roleid").GetInt32(),
+                        RoleName = item.TryGetProperty("rolename", out var rn) ? rn.GetString() ?? "" : "",
+                        GuestType = item.TryGetProperty("guesttype", out var gt) && gt.ValueKind != JsonValueKind.Null ? gt.GetString() : null,
+                        RequestedBy = item.GetProperty("requestedby").GetInt32(),
+                        RequestedByName = item.TryGetProperty("requestedbyname", out var rbn) ? rbn.GetString() ?? "" : "",
+                        Status = item.TryGetProperty("status", out var s) ? s.GetString() ?? "" : "",
+                        ApprovedBy = item.TryGetProperty("approvedby", out var ab) && ab.ValueKind != JsonValueKind.Null ? ab.GetInt32() : null,
+                        ApprovedByName = item.TryGetProperty("approvedbyname", out var abn) ? abn.GetString() ?? "" : "",
+                        ApprovedOn = item.TryGetProperty("approvedon", out var ao) && ao.ValueKind != JsonValueKind.Null && ao.TryGetDateTime(out var dt) ? dt : null,
+                        RejectionReason = item.TryGetProperty("rejectionreason", out var rr) && rr.ValueKind != JsonValueKind.Null ? rr.GetString() : null,
+                        CreatedOn = item.TryGetProperty("createdon", out var co) && co.TryGetDateTime(out var createdOn) ? createdOn : DateTime.UtcNow
+                    });
+                }
+
+                return requests;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task<bool> UpdateFlatOwnerRequestStatusAsync(int requestId, string status, int approvedBy, string? rejectionReason)
+        {
+            const string query = @"SELECT public.sp_api_flatownerrequest(@p_operation, @p_json);";
+
+            var payload = new
+            {
+                requestid = requestId,
+                status = status,
+                approvedby = approvedBy,
+                rejectionreason = rejectionReason
+            };
+
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 3);
+                cmd.Parameters.Add("p_json", NpgsqlDbType.Jsonb).Value = jsonPayload;
+                //cmd.Parameters.AddWithValue("p_json", (object)jsonPayload ?? DBNull.Value);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+
+                if (scalarResult is null || scalarResult is DBNull)
+                    throw new Exception("sp_api_flatownerrequest returned null/empty result.");
+
+                var resultJson = scalarResult.ToString();
+                using var doc = JsonDocument.Parse(resultJson!);
+                var root = doc.RootElement;
+
+                var statusCode = root.GetProperty("status_code").GetInt32();
+                var message = root.GetProperty("message").GetString();
+
+                if (statusCode != 200)
+                    throw new ApplicationException(message ?? "Failed to update flat owner request.");
+
+                return true;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task<FlatOwnerRequestResponseModel?> GetFlatOwnerRequestByIdAsync(int requestId)
+        {
+            const string query = @"SELECT public.sp_api_getflatownerrequestbyid(@p_requestid)::text;";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_requestid", requestId);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+
+                if (scalarResult is null || scalarResult is DBNull)
+                    return null;
+
+                var resultJson = scalarResult.ToString();
+                using var doc = JsonDocument.Parse(resultJson!);
+                var root = doc.RootElement;
+
+                var statusCode = root.GetProperty("status_code").GetInt32();
+                if (statusCode == 404)
+                    return null;
+
+                if (statusCode != 200)
+                {
+                    var msg = root.TryGetProperty("message", out var m) ? m.GetString() : "Unknown error";
+                    throw new ApplicationException($"Error fetching flat owner request: {msg}");
+                }
+
+                if (!root.TryGetProperty("data", out var dataEl) || dataEl.ValueKind != JsonValueKind.Object)
+                    return null;
+
+                var item = dataEl;
+
+                return new FlatOwnerRequestResponseModel
+                {
+                    Id = item.GetProperty("id").GetInt32(),
+                    PropertyId = item.GetProperty("propertyid").GetInt32(),
+                    PropertyName = item.TryGetProperty("propertyname", out var pn) ? pn.GetString() ?? "" : "",
+                    BuildingId = item.GetProperty("buildingid").GetInt32(),
+                    BuildingName = item.TryGetProperty("buildingname", out var bn) ? bn.GetString() ?? "" : "",
+                    FlatNumber = item.TryGetProperty("flatnumber", out var fn) ? fn.GetString() ?? "" : "",
+                    UserId = item.GetProperty("userid").GetInt32(),
+                    UserFirstName = item.TryGetProperty("userfirstname", out var ufn) ? ufn.GetString() ?? "" : "",
+                    UserLastName = item.TryGetProperty("userlastname", out var uln) ? uln.GetString() ?? "" : "",
+                    UserEmail = item.TryGetProperty("useremail", out var ue) ? ue.GetString() ?? "" : "",
+                    UserPhone = item.TryGetProperty("userphone", out var up) ? up.GetString() ?? "" : "",
+                    RoleId = item.GetProperty("roleid").GetInt32(),
+                    RoleName = item.TryGetProperty("rolename", out var rn) ? rn.GetString() ?? "" : "",
+                    GuestType = item.TryGetProperty("guesttype", out var gt) && gt.ValueKind != JsonValueKind.Null ? gt.GetString() : null,
+                    RequestedBy = item.GetProperty("requestedby").GetInt32(),
+                    RequestedByName = item.TryGetProperty("requestedbyname", out var rbn) ? rbn.GetString() ?? "" : "",
+                    Status = item.TryGetProperty("status", out var s) ? s.GetString() ?? "" : "",
+                    ApprovedBy = item.TryGetProperty("approvedby", out var ab) && ab.ValueKind != JsonValueKind.Null ? ab.GetInt32() : null,
+                    ApprovedByName = item.TryGetProperty("approvedbyname", out var abn) ? abn.GetString() ?? "" : "",
+                    ApprovedOn = item.TryGetProperty("approvedon", out var ao) && ao.ValueKind != JsonValueKind.Null && ao.TryGetDateTime(out var dt) ? dt : null,
+                    RejectionReason = item.TryGetProperty("rejectionreason", out var rr) && rr.ValueKind != JsonValueKind.Null ? rr.GetString() : null,
+                    CreatedOn = item.TryGetProperty("createdon", out var co) && co.TryGetDateTime(out var createdOn) ? createdOn : DateTime.UtcNow
+                };
             }
             finally
             {

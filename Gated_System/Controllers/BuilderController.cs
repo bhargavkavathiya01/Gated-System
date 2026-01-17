@@ -84,13 +84,24 @@ namespace Gated_System.Controllers
                 var userId = GetCurrentUserId();
                 if (userId == -1)
                     return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
-                dto.CreatedBy = userId;
 
-                var resultId = await _service.CreateFlatOwnerAsync(dto);
+                // Convert to request model
+                var requestModel = new CreateFlatOwnerRequestModel
+                {
+                    PropertyId = dto.PropertyId,
+                    BuildingId = dto.BuildingId,
+                    FlatNo = dto.FlatNo,
+                    UserId = dto.UserId,
+                    RoleId = dto.RoleId,
+                    GuestType = dto.GuestType,
+                    RequestedBy = userId
+                };
+
+                var resultId = await _service.CreateFlatOwnerRequestAsync(requestModel);
                 return Ok(new
                 {
                     status = true,
-                    message = "Flat Owner created successfully",
+                    message = "Flat Owner creation request submitted successfully. Waiting for admin approval.",
                     data = new { id = resultId }
                 });
             }
@@ -101,6 +112,25 @@ namespace Gated_System.Controllers
             catch (Exception ex)
             {
                 // consider logging ex
+                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+            }
+        }
+
+        [HttpGet("flatownerrequests")]
+        public async Task<IActionResult> GetFlatOwnerRequests([FromQuery] string? status = null)
+        {
+            try
+            {
+                var requests = await _service.GetAllFlatOwnerRequestsAsync(status);
+                return Ok(new
+                {
+                    status = true,
+                    message = "Flat owner requests fetched successfully",
+                    data = requests
+                });
+            }
+            catch (Exception ex)
+            {
                 return StatusCode(500, new { message = "An error occurred", details = ex.Message });
             }
         }
