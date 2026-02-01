@@ -10,5 +10,6 @@ namespace Gated_System.Services
         Task<RefreshTokenResponseModel?> RefreshAsync(string refreshToken);
         Task<int> CreatePropertyAsync(PropertyCreateModel property);
         Task<ServiceResult<bool>> ForgotPasswordAsync(ForgotPasswordRequest request);
+        Task<IEnumerable<RegisterTypeModel>> GetRegisterTypesAsync();
     }
 }

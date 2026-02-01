@@ -321,7 +321,7 @@ namespace Gated_System.Repositories
                 {
                     users.Add(new UserListResponseModel
                     {
-                        Id = item.GetProperty("userid").GetInt32(),
+                        Id = item.GetProperty("id").GetInt32(),
                         Firstname = item.GetProperty("firstname").GetString() ?? "",
                         Middlename = item.TryGetProperty("middlename", out var m) ? m.GetString() ?? "" : "",
                         Lastname = item.GetProperty("lastname").GetString() ?? "",
@@ -334,6 +334,11 @@ namespace Gated_System.Repositories
                 }
 
                 return users;
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                return null!;
             }
             finally
             {
@@ -444,7 +449,8 @@ namespace Gated_System.Repositories
             {
                 using var cmd = new NpgsqlCommand(query, _connection);
                 cmd.Parameters.AddWithValue("p_operation", 2);
-                cmd.Parameters.AddWithValue("p_json", (object)jsonPayload ?? DBNull.Value);
+                cmd.Parameters.Add("p_json", NpgsqlDbType.Jsonb).Value = jsonPayload;
+                //cmd.Parameters.AddWithValue("p_json", (object)jsonPayload ?? DBNull.Value);
 
                 var scalarResult = await cmd.ExecuteScalarAsync();
 

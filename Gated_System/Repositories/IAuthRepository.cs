@@ -17,5 +17,6 @@ namespace Gated_System.Repositories
         Task DeleteRefreshTokenAsync(string token);
         Task<int> CreatePropertyAsync(PropertyCreateModel property);
         Task<bool> UpdatePasswordAsync(UpdatePasswordModel model);
+        Task<IEnumerable<RegisterTypeModel>> GetRegisterTypesAsync();
     }
 }

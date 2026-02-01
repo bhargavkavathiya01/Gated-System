@@ -38,7 +38,8 @@ namespace Gated_System.Services
                 Phone = dto.Phone,
                 Password = dto.Password,
                 //PasswordSalt = salt,
-                IsActive = true
+                IsActive = true,
+                RegisterTypeId = dto.RegisterTypeId
             };
 
             var userId = await _repo.CreateAsync(user);
@@ -66,7 +67,8 @@ namespace Gated_System.Services
                 Middlename=dto.Middlename,
                 Lastname=dto.Lastname,
                 Email = dto.Email,
-                Phone = dto.Phone
+                Phone = dto.Phone,
+                RegisterTypeId = dto.RegisterTypeId
             };
         }
 
@@ -266,6 +268,11 @@ namespace Gated_System.Services
             {
                 return ServiceResult<bool>.Fail($"An error occurred: {ex.Message}");
             }
+        }
+
+        public async Task<IEnumerable<RegisterTypeModel>> GetRegisterTypesAsync()
+        {
+            return await _repo.GetRegisterTypesAsync();
         }
     }
 }

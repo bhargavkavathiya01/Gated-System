@@ -144,5 +144,24 @@ namespace Gated_System.Controllers
                 message = result.Message
             });
         }
+
+        [HttpGet("getregisteredusertypes")]
+        public async Task<IActionResult> GetRegisterTypes()
+        {
+            try
+            {
+                var registerTypes = await _auth.GetRegisterTypesAsync();
+                return Ok(new
+                {
+                    status = true,
+                    message = "Register types fetched successfully",
+                    data = registerTypes
+                });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { status = false, message = "An error occurred", details = ex.Message });
+            }
+        }
     }
 }

@@ -26,7 +26,8 @@ namespace Gated_System.Repositories
                 phone = user.Phone,
                 password = user.Password,   // SP will hash this (MD5 as you said)
                 isactive = user.IsActive,
-                createdby = user.CreatedBy
+                createdby = user.CreatedBy,
+                registertypeid = user.RegisterTypeId
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);
@@ -211,6 +212,7 @@ namespace Gated_System.Repositories
                     Lastname = data.GetProperty("lastname").GetString() ?? "",
                     Email = data.GetProperty("email").GetString() ?? "",
                     PermanentQR = data.GetProperty("permanentQR").GetString() ?? "",
+                    UserRegistrationTypeId = data.GetProperty("userType").GetInt32(),
                     Phone = data.GetProperty("phone").ValueKind == JsonValueKind.Null
                 ? ""
                 : data.GetProperty("phone").GetString() ?? ""
@@ -921,6 +923,56 @@ namespace Gated_System.Repositories
                 return doc.RootElement.GetProperty("status_code").GetInt32() == 200;
             }
             finally { await _connection.CloseAsync(); }
+        }
+
+        public async Task<IEnumerable<RegisterTypeModel>> GetRegisterTypesAsync()
+        {
+            const string query = @"SELECT public.sp_api_registertypemaster(@p_operation, @p_json)::text;";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 1);
+                cmd.Parameters.AddWithValue("p_json", DBNull.Value);
+
+                var scalar = await cmd.ExecuteScalarAsync();
+                if (scalar is null || scalar is DBNull)
+                    return Enumerable.Empty<RegisterTypeModel>();
+
+                var json = scalar.ToString();
+                if (string.IsNullOrWhiteSpace(json))
+                    return Enumerable.Empty<RegisterTypeModel>();
+
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                if (root.GetProperty("status_code").GetInt32() != 200)
+                    return Enumerable.Empty<RegisterTypeModel>();
+
+                if (!root.TryGetProperty("data", out var data) || data.ValueKind != JsonValueKind.Array)
+                    return Enumerable.Empty<RegisterTypeModel>();
+
+                var registerTypes = new List<RegisterTypeModel>();
+
+                foreach (var item in data.EnumerateArray())
+                {
+                    registerTypes.Add(new RegisterTypeModel
+                    {
+                        Id = item.GetProperty("id").GetInt32(),
+                        RegisterTypeName = item.GetProperty("registertypename").GetString() ?? "",
+                        IsActive = item.GetProperty("isactive").GetBoolean(),
+                        CreatedOn = item.TryGetProperty("createdon", out var co) && co.TryGetDateTime(out var createdOn) ? createdOn : DateTime.UtcNow,
+                        ModifiedOn = item.TryGetProperty("modifiedon", out var mo) && mo.ValueKind != JsonValueKind.Null && mo.TryGetDateTime(out var modifiedOn) ? modifiedOn : null
+                    });
+                }
+
+                return registerTypes;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
         }
     }
 }

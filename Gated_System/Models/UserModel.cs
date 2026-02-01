@@ -11,6 +11,16 @@
         public string Password { get; set; } = "";
         public bool IsActive { get; set; } = true;
         public int CreatedBy { get; set; }
+        public int? RegisterTypeId { get; set; }
+    }
+
+    public class RegisterTypeModel
+    {
+        public int Id { get; set; }
+        public string RegisterTypeName { get; set; } = "";
+        public bool IsActive { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public DateTime? ModifiedOn { get; set; }
     }
     public class UserListResponseModel
     {
@@ -34,6 +44,7 @@
         public string Email { get; set; } = "";
         public string Phone { get; set; } = "";
         public string? PermanentQR { get; set; } = "";
+        public int? UserRegistrationTypeId { get; set; }
     }
 
     public class RegisterModel
@@ -44,6 +55,7 @@
         public string Email { get; set; } = "";
         public string Phone { get; set; } = "";
         public string Password { get; set; } = "";
+        public int RegisterTypeId { get; set; }
     }
 
     public class LoginModel
