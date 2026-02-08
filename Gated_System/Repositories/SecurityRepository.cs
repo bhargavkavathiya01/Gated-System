@@ -112,5 +112,41 @@ namespace Gated_System.Repositories
                 await _connection.CloseAsync();
             }
         }
+
+        public async Task<int> CreateManualVisitorRequestAsync(object payload)
+        {
+            const string fn = @"SELECT public.sp_api_visitorrequest(@p_operation, @p_json)::text;";
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(fn, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 2);
+                cmd.Parameters.AddWithValue("p_json", (object)jsonPayload ?? DBNull.Value);
+
+                var scalar = await cmd.ExecuteScalarAsync();
+                if (scalar is null || scalar is DBNull)
+                    throw new ApplicationException("Stored-proc returned empty result.");
+
+                var result = scalar.ToString()!;
+                using var doc = JsonDocument.Parse(result);
+                var root = doc.RootElement;
+
+                var status = root.GetProperty("status_code").GetInt32();
+                if (status != 201)
+                {
+                    var msg = root.TryGetProperty("message", out var m) ? m.GetString() : "Failed creating visitor request";
+                    throw new ApplicationException(msg);
+                }
+
+                var id = root.GetProperty("data").GetProperty("id").GetInt32();
+                return id;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
     }
 }

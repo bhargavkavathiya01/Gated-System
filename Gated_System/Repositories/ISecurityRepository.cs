@@ -8,5 +8,6 @@ namespace Gated_System.Repositories
         Task<JsonDocument> CreateVisitorLogRawAsync(object payload);
         Task<JsonDocument> UpdateVisitorRequestStatusRawAsync(object payload);
         Task<JsonDocument> UpdateVisitorLogExitRawAsync(object payload);
+        Task<int> CreateManualVisitorRequestAsync(object payload);
     }
 }

@@ -10,8 +10,21 @@ namespace Gated_System.Services
     public class FlatOwnerService :IFlatOwnerService
     {
         private readonly IFlatOwnerRepository _repo;
+        private readonly ISecurityRepository _securityRepo;
+        private readonly IUserRepository _userRepo;
+        private readonly PushNotificationHelper _pushHelper;
 
-        public FlatOwnerService(IFlatOwnerRepository repo) => _repo = repo;
+        public FlatOwnerService(
+            IFlatOwnerRepository repo, 
+            ISecurityRepository securityRepo,
+            IUserRepository userRepo,
+            PushNotificationHelper pushHelper)
+        {
+            _repo = repo;
+            _securityRepo = securityRepo;
+            _userRepo = userRepo;
+            _pushHelper = pushHelper;
+        }
 
         public static readonly HashSet<string> AllowedGuestTypes =
         new(StringComparer.OrdinalIgnoreCase)
@@ -275,6 +288,85 @@ namespace Gated_System.Services
             if (status != 200)
             {
                 throw new ApplicationException(message);
+            }
+        }
+
+        public async Task ApproveVisitorRequestAsync(VisitorApprovalRequest req)
+        {
+            if (req.RequestId <= 0) throw new ApplicationException("Invalid RequestId.");
+
+            // 1. Get request details to know the Guard (RequestedBy)
+            var visitorJson = await _repo.GetVisitorByIdRawAsync(req.RequestId);
+            var root = visitorJson.RootElement;
+            if (root.GetProperty("status_code").GetInt32() != 200)
+                throw new ApplicationException("Visitor request not found.");
+
+            var dataArr = root.GetProperty("data");
+            var item = dataArr.ValueKind == JsonValueKind.Array ? dataArr[0] : dataArr;
+            
+            int requestedBy = item.GetProperty("requestedby").GetInt32();
+            string visitorName = item.GetProperty("visitorname").GetString() ?? "Visitor";
+
+            // 2. Logic based on Approval Status
+            bool isApproved = req.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase);
+
+            if (isApproved)
+            {
+                // A) Update Status to 'Approved'
+                var updatePayload = new
+                {
+                    id = req.RequestId,
+                    status = "Active",
+                    modifiedby = req.ApprovedBy
+                };
+                using var updDoc = await _securityRepo.UpdateVisitorRequestStatusRawAsync(updatePayload);
+                if (updDoc.RootElement.GetProperty("status_code").GetInt32() != 200)
+                    throw new ApplicationException("Failed to update visitor status.");
+
+                // B) Create Visitor Log
+                var logPayload = new
+                {
+                    visitorrequestid = req.RequestId,
+                    securityid = requestedBy, // Security who requested it is responsible for "entry" in this flow
+                    entrytime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                    remarks = req.Remarks
+                };
+                using var logDoc = await _securityRepo.CreateVisitorLogRawAsync(logPayload);
+                if (logDoc.RootElement.GetProperty("status_code").GetInt32() != 201)
+                    throw new ApplicationException("Failed to create visitor log.");
+            }
+            else
+            {
+                // Rejected
+                var updatePayload = new
+                {
+                    id = req.RequestId,
+                    status = "Expired",
+                    modifiedby = req.ApprovedBy
+                };
+                using var updDoc = await _securityRepo.UpdateVisitorRequestStatusRawAsync(updatePayload);
+            }
+
+            // 3. Notify Security Guard
+            var guardToken = await _userRepo.GetDeviceTokenAsync(requestedBy);
+            if (!string.IsNullOrEmpty(guardToken))
+            {
+                string title = isApproved ? "Visitor Approved" : "Visitor Rejected";
+                string body = isApproved 
+                    ? $"{visitorName} has been approved. Log created." 
+                    : $"{visitorName} has been rejected.";
+
+                await _pushHelper.SendToDeviceAsync(
+                    guardToken,
+                    title,
+                    body,
+                    new Dictionary<string, string>
+                    {
+                        { "visitorRequestId", req.RequestId.ToString() },
+                        { "status", req.Status },
+                        { "type", "approval_result" }
+                    }
+                );
             }
         }
     }

@@ -26,6 +26,7 @@ namespace Gated_System.Repositories
                 lastname = user.Lastname,
                 email = user.Email,
                 phone = user.Phone,
+                profilepictureurl = user.ProfilePictureUrl,
                 modifiedby = user.CreatedBy
             };
 
@@ -130,6 +131,28 @@ namespace Gated_System.Repositories
                 }
 
                 return statusCode == 200;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task<string?> GetDeviceTokenAsync(int userId)
+        {
+            const string query = @"SELECT devicetoken FROM tbluserdevicetokens WHERE userid = @UserId ORDER BY id DESC LIMIT 1";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("UserId", userId);
+
+                var result = await cmd.ExecuteScalarAsync();
+                if (result == null || result == DBNull.Value)
+                    return null;
+
+                return result.ToString();
             }
             finally
             {

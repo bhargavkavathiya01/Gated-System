@@ -84,10 +84,11 @@
 
     public class PropertyMemberDetailsResponse
     {
-        public int TotalResidents { get; set; }
-        public int TotalFlatowners { get; set; }
-        public List<SecretaryDetailDto> SecretaryDetails { get; set; } = new();
-        public List<SecurityDetailDto> SecurityDetails { get; set; } = new();
+        public List<PropertyMembersModel> MemberDetails { get; set; } = new();
+        //public int TotalResidents { get; set; }
+        //public int TotalFlatowners { get; set; }
+        //public List<SecretaryDetailDto> SecretaryDetails { get; set; } = new();
+        //public List<SecurityDetailDto> SecurityDetails { get; set; } = new();
     }
 
     public class SecretaryDetailDto
@@ -167,5 +168,22 @@
         public int RequestId { get; set; }
         public string Action { get; set; } = "Approved"; // "Approved" or "Rejected"
         public string? RejectionReason { get; set; }
+    }
+
+    public class PropertyMembersModel
+    {
+        public int UserId { get; set; }
+        public string Firstname { get; set; } = string.Empty;
+        public string Lastname { get; set; } = string.Empty;
+        public string Phone { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+
+        public List<Roles> Roles { get; set; } = new();
+    }
+
+    public class Roles
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
     }
 }

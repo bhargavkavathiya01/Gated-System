@@ -12,6 +12,8 @@
         public bool IsActive { get; set; } = true;
         public int CreatedBy { get; set; }
         public int? RegisterTypeId { get; set; }
+        public string? ProfilePictureUrl { get; set; }
+        public IFormFile? ProfileImage { get; set; }
     }
 
     public class RegisterTypeModel

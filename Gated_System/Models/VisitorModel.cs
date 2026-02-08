@@ -1,4 +1,6 @@
-﻿namespace Gated_System.Models
+﻿using Microsoft.AspNetCore.Http;
+
+namespace Gated_System.Models
 {
     public class CreateVisitorDto
     {
@@ -33,6 +35,26 @@
     {
         public int VisitorLogId { get; set; }
         public string? Remarks { get; set; }
+    }
+
+    public class ManualEntryRequest
+    {
+        public string VisitorName { get; set; } = "";
+        public string Phone { get; set; } = "";
+        public string Purpose { get; set; } = "";
+        public int PropertyId { get; set; }
+        public int BuildingId { get; set; }
+        public string FlatId { get; set; }
+        public int FlatOwnerId { get; set; }
+        public IFormFile? Image { get; set; }
+    }
+
+    public class VisitorApprovalRequest
+    {
+        public int RequestId { get; set; }
+        public string Status { get; set; } = "Approved"; // Approved or Rejected
+        public string? Remarks { get; set; }
+        public int ApprovedBy { get; set; } // Flat Owner ID
     }
 
 }

@@ -10,10 +10,12 @@ namespace Gated_System.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserService _userService;
+        private readonly IAwsS3Service _awsS3Service;
 
-        public UserController(IUserService userService)
+        public UserController(IUserService userService, IAwsS3Service awsS3Service)
         {
             _userService = userService;
+            _awsS3Service = awsS3Service;
         }
 
         private int GetCurrentUserId()
@@ -25,7 +27,7 @@ namespace Gated_System.Controllers
         }
 
         [HttpPut("update-profile")]
-        public async Task<IActionResult> UpdateProfile([FromBody] UserModel dto)
+        public async Task<IActionResult> UpdateProfile([FromForm] UserModel dto)
         {
             int currentUserId = GetCurrentUserId();
             if (currentUserId == -1) return Unauthorized();
@@ -34,6 +36,16 @@ namespace Gated_System.Controllers
             // OR the ID is set from the token for security
             dto.Id = currentUserId;
             dto.CreatedBy = currentUserId;
+
+            
+            if (dto.ProfileImage != null)
+            {
+                var uploadResult = await _awsS3Service.UploadFileAsync(dto.ProfileImage, "user-profiles");
+                if (uploadResult.status)
+                {
+                    dto.ProfilePictureUrl = uploadResult.Data;
+                }
+            }
 
             var result = await _userService.UpdateProfileAsync(dto);
 

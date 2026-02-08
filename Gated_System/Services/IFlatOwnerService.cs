@@ -13,5 +13,6 @@ namespace Gated_System.Services
         Task<ServiceResult<IEnumerable<dynamic>>> GetHistoryAsync(QRHistoryRequest request);
         Task<ServiceResult<bool>> RevokeAsync(RevokeQRRequest request);
         Task RegisterDeviceTokenAsync(UserDeviceTokenModel dto);
+        Task ApproveVisitorRequestAsync(VisitorApprovalRequest req);
     }
 }

@@ -7,5 +7,6 @@ namespace Gated_System.Repositories
         Task<bool> UpdateUserAsync(UserModel user);
         Task<bool> UpdatePasswordAsync(UpdatePasswordModel model);
         Task<bool> UpdateFcmTokenAsync(UpdateFcmTokenModel model);
+        Task<string?> GetDeviceTokenAsync(int userId);
     }
 }

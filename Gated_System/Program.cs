@@ -320,6 +320,7 @@ builder.Services.AddScoped<ISecretoryService, SecretoryService>();
 builder.Services.AddScoped<ISecretoryRepository, SecretoryRepository>();
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IAwsS3Service, AwsS3Service>();
 builder.Services.AddScoped<SendEmailHelper>();
 
 

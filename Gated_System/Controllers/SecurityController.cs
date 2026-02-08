@@ -58,6 +58,30 @@ namespace Gated_System.Controllers
             }
         }
 
+        [HttpPost("manual-entry")]
+        public async Task<IActionResult> ManualEntry([FromBody] ManualEntryRequest req)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+                // Call service
+                var id = await _service.CreateManualVisitorAsync(req, userId);
+                
+                return Ok(ApiResponse.Success("Visitor request created successfully", new { id }));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ApiResponse.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail(ex.Message));
+            }
+        }
+
         //[HttpPost("checkout")]
         //public async Task<IActionResult> Checkout([FromBody] CheckoutRequest req)
         //{

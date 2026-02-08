@@ -193,5 +193,29 @@ namespace Gated_System.Controllers
                 return StatusCode(500, ApiResponse.Fail("Internal Server Error: " + ex.Message));
             }
         }
+
+        [HttpPost("approveorrejectmanualvisitor")]
+        public async Task<IActionResult> ApproveVisitor([FromBody] VisitorApprovalRequest req)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+                req.ApprovedBy = userId; // Enforce logged-in user
+
+                await _service.ApproveVisitorRequestAsync(req);
+                return Ok(ApiResponse.Success($"Visitor request {req.Status.ToLower()} successfully."));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ApiResponse.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail(ex.Message));
+            }
+        }
     }
 }

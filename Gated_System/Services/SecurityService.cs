@@ -1,4 +1,5 @@
-﻿using Gated_System.Models;
+﻿using Gated_System.Helpers;
+using Gated_System.Models;
 using Gated_System.Repositories;
 using System.Text.Json;
 
@@ -7,7 +8,21 @@ namespace Gated_System.Services
     public class SecurityService : ISecurityService
     {
         private readonly ISecurityRepository _repo;
-        public SecurityService(ISecurityRepository repo) => _repo = repo;
+        private readonly IFlatOwnerRepository _flatOwnerRepo;
+        private readonly IUserRepository _userRepo;
+        private readonly PushNotificationHelper _pushHelper;
+
+        public SecurityService(
+            ISecurityRepository repo,
+            IFlatOwnerRepository flatOwnerRepo,
+            IUserRepository userRepo,
+            PushNotificationHelper pushHelper)
+        {
+            _repo = repo;
+            _flatOwnerRepo = flatOwnerRepo;
+            _userRepo = userRepo;
+            _pushHelper = pushHelper;
+        }
 
         public async Task<object> VerifyQrAsync(VerifyQrRequest req,int SecurityId)
         {
@@ -123,5 +138,57 @@ namespace Gated_System.Services
             var status = root.GetProperty("status_code").GetInt32();
             if (status != 200) throw new ApplicationException("Checkout failed.");
         }
-    }
+
+        public async Task<int> CreateManualVisitorAsync(ManualEntryRequest req, int securityId)
+        {
+            if (req == null) throw new ApplicationException("Request cannot be null.");
+            if (string.IsNullOrWhiteSpace(req.VisitorName)) throw new ApplicationException("Visitor name is required.");
+            if (req.PropertyId <= 0) throw new ApplicationException("PropertyId is required.");
+            if (req.BuildingId <= 0) throw new ApplicationException("BuildingId is required.");
+            if (req.FlatId == null) throw new ApplicationException("FlatId is required.");
+
+            // 1. Create Visitor Request
+            // Generate a manual QR code string
+            var manualQr = "MANUAL-" + Guid.NewGuid().ToString("N")[..10].ToUpper(); 
+
+            var payload = new
+            {
+                visitorname = req.VisitorName,
+                phone = req.Phone,
+                purpose = req.Purpose,
+                propertyid = req.PropertyId,
+                buildingid = req.BuildingId,
+                flatid = req.FlatId,
+                requestedby = securityId,
+                qrcode = manualQr,
+                expiry = DateTime.UtcNow.AddMinutes(30).ToString("o"), // Short expiry for approval
+                qr_type = "manual",
+                max_uses = 1,
+                status = "Active"
+            };
+
+            int insertedId = await _repo.CreateManualVisitorRequestAsync(payload);
+
+            // 2. Send Notification to specific Flat Owner (Directly)
+            if (req.FlatOwnerId > 0)
+            {
+                var deviceToken = await _userRepo.GetDeviceTokenAsync(req.FlatOwnerId);
+                if (!string.IsNullOrEmpty(deviceToken))
+                {
+                    await _pushHelper.SendToDeviceAsync(
+                        deviceToken,
+                        "Visitor Approval Request",
+                        $"Visitor {req.VisitorName} is waiting for your approval.",
+                        new Dictionary<string, string>
+                        {
+                            { "visitorRequestId", insertedId.ToString() },
+                            { "action", "approve_reject" },
+                            { "type", "visitor_request" }
+                        }
+                    );
+                }
+            }
+
+            return insertedId;
+        }    }
 }
