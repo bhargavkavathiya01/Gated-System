@@ -16,6 +16,20 @@
         public IFormFile? ProfileImage { get; set; }
     }
 
+    public class UserProfileUpdateModel
+    {
+        public int Id { get; set; }
+        public string? Firstname { get; set; }
+        public string? Middlename { get; set; }
+        public string? Lastname { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? Password { get; set; }
+        public int? ModifiedBy { get; set; }
+        public string? ProfilePictureUrl { get; set; }
+        public IFormFile? ProfileImage { get; set; }
+    }
+
     public class RegisterTypeModel
     {
         public int Id { get; set; }
@@ -47,6 +61,7 @@
         public string Phone { get; set; } = "";
         public string? PermanentQR { get; set; } = "";
         public int? UserRegistrationTypeId { get; set; }
+        public string? ProfilePictureUrl { get; set; }
     }
 
     public class RegisterModel

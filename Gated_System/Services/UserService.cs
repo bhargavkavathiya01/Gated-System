@@ -14,7 +14,7 @@ namespace Gated_System.Services
             _authRepo = authRepo;
         }
 
-        public async Task<ServiceResult<bool>> UpdateProfileAsync(UserModel dto)
+        public async Task<ServiceResult<bool>> UpdateProfileAsync(UserProfileUpdateModel dto)
         {
             try
             {

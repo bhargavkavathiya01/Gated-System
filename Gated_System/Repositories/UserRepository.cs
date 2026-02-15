@@ -14,7 +14,7 @@ namespace Gated_System.Repositories
         }
 
 
-        public async Task<bool> UpdateUserAsync(UserModel user)
+        public async Task<bool> UpdateUserAsync(UserProfileUpdateModel user)
         {
             const string query = @"SELECT public.sp_api_usermaster(@p_operation, @p_json)::text;";
 
@@ -27,7 +27,7 @@ namespace Gated_System.Repositories
                 email = user.Email,
                 phone = user.Phone,
                 profilepictureurl = user.ProfilePictureUrl,
-                modifiedby = user.CreatedBy
+                modifiedby = user.ModifiedBy
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);

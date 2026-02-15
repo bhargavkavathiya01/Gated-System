@@ -27,7 +27,7 @@ namespace Gated_System.Controllers
         }
 
         [HttpPut("update-profile")]
-        public async Task<IActionResult> UpdateProfile([FromForm] UserModel dto)
+        public async Task<IActionResult> UpdateProfile([FromForm] UserProfileUpdateModel dto)
         {
             int currentUserId = GetCurrentUserId();
             if (currentUserId == -1) return Unauthorized();
@@ -35,7 +35,7 @@ namespace Gated_System.Controllers
             // Safety: Ensure users can only update their own profile 
             // OR the ID is set from the token for security
             dto.Id = currentUserId;
-            dto.CreatedBy = currentUserId;
+            dto.ModifiedBy = currentUserId;
 
             
             if (dto.ProfileImage != null)

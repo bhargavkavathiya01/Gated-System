@@ -44,7 +44,7 @@ namespace Gated_System.Services
                         InputStream = newMemoryStream,
                         Key = fileName,
                         BucketName = _bucketName,
-                        CannedACL = S3CannedACL.PublicRead
+                        //CannedACL = S3CannedACL.PublicRead
                     };
 
                     await fileTransferUtility.UploadAsync(uploadRequest);

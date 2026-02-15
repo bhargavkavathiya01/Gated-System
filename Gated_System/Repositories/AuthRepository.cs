@@ -328,7 +328,8 @@ namespace Gated_System.Repositories
                     Middlename = SafeString(item, "middlename"),
                     Lastname = SafeString(item, "lastname"),
                     Email = SafeString(item, "email"),
-                    Phone = SafeString(item, "phone")
+                    Phone = SafeString(item, "phone"),
+                    ProfilePictureUrl = SafeString(item, "profile_image")
                 };
 
                 return user;
