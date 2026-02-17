@@ -60,8 +60,9 @@
         public string Email { get; set; } = "";
         public string Phone { get; set; } = "";
         public string? PermanentQR { get; set; } = "";
+        //public string? ProfileImage { get; set; } = "";
         public int? UserRegistrationTypeId { get; set; }
-        public string? ProfilePictureUrl { get; set; }
+        public string? ProfilePictureUrl { get; set; } = "";
     }
 
     public class RegisterModel

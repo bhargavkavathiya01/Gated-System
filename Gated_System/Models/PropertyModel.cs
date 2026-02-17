@@ -45,10 +45,18 @@
         public int PropertyId { get; set; }
         public int BuildingId { get; set; }
         public string FlatNo { get; set; }
-        public int UserId { get; set; }
+        public int? UserId { get; set; }
         public int RoleId { get; set; }
         public string? GuestType { get; set; }
         public int CreatedBy { get; set; } //Builder Id
+
+        // User Registration Fields
+        public string? Firstname { get; set; }
+        public string? Middlename { get; set; }
+        public string? Lastname { get; set; }
+        public string? Email { get; set; }
+        public string? Phone { get; set; }
+        public string? Password { get; set; }
     }
 
     public class PropertyViewModel
@@ -131,7 +139,7 @@
         public int PropertyId { get; set; }
         public int BuildingId { get; set; }
         public string FlatNo { get; set; } = null!;
-        public int UserId { get; set; }
+        public int? UserId { get; set; }
         public int RoleId { get; set; }
         public string? GuestType { get; set; }
         public int RequestedBy { get; set; } // Builder Id

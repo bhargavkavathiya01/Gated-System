@@ -12,17 +12,20 @@ namespace Gated_System.Services
         private readonly IFlatOwnerRepository _repo;
         private readonly ISecurityRepository _securityRepo;
         private readonly IUserRepository _userRepo;
+        private readonly IAuthRepository _authRepo;
         private readonly PushNotificationHelper _pushHelper;
 
         public FlatOwnerService(
             IFlatOwnerRepository repo, 
             ISecurityRepository securityRepo,
             IUserRepository userRepo,
+            IAuthRepository authRepo,
             PushNotificationHelper pushHelper)
         {
             _repo = repo;
             _securityRepo = securityRepo;
             _userRepo = userRepo;
+            _authRepo = authRepo;
             _pushHelper = pushHelper;
         }
 
@@ -202,7 +205,44 @@ namespace Gated_System.Services
             if (dto.PropertyId <= 0) throw new ApplicationException("Invalid PropertyId.");
             if (dto.BuildingId <= 0) throw new ApplicationException("Invalid BuildingId.");
             if (dto.FlatNo == null) throw new ApplicationException("Invalid FlatNo.");
-            if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
+            // if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
+
+            int finalUserId = dto.UserId ?? 0;
+
+            if (finalUserId <= 0)
+            {
+                // Check if email is provided
+                if (string.IsNullOrWhiteSpace(dto.Email))
+                    throw new ApplicationException("Email is required when UserId is not provided.");
+
+                // Check if user exists
+                var existingUser = await _authRepo.GetByEmailAsync(dto.Email);
+                if (existingUser != null)
+                {
+                    finalUserId = existingUser.Id;
+                }
+                else
+                {
+                    // Create new user
+                    if (string.IsNullOrWhiteSpace(dto.Firstname)) throw new ApplicationException("Firstname is required for new user.");
+                    if (string.IsNullOrWhiteSpace(dto.Password)) throw new ApplicationException("Password is required for new user.");
+
+                    var newUser = new UserModel
+                    {
+                        Firstname = dto.Firstname,
+                        Middlename = dto.Middlename ?? "",
+                        Lastname = dto.Lastname ?? "",
+                        Email = dto.Email,
+                        Phone = dto.Phone ?? "",
+                        Password = dto.Password,
+                        IsActive = true,
+                        CreatedBy = dto.CreatedBy
+                    };
+
+                    finalUserId = await _authRepo.CreateAsync(newUser);
+                }
+                dto.UserId = finalUserId;
+            }
             if (dto.RoleId <= 0) throw new ApplicationException("Invalid RoleId.");
             if (string.IsNullOrWhiteSpace(dto.GuestType) ||!AllowedGuestTypes.Contains(dto.GuestType))
             {

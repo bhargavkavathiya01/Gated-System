@@ -212,7 +212,9 @@ namespace Gated_System.Repositories
                     Lastname = data.GetProperty("lastname").GetString() ?? "",
                     Email = data.GetProperty("email").GetString() ?? "",
                     PermanentQR = data.GetProperty("permanentQR").GetString() ?? "",
-                    UserRegistrationTypeId = data.GetProperty("userType").GetInt32(),
+                    //UserRegistrationTypeId = data.GetProperty("userType").GetInt32(),
+                    UserRegistrationTypeId = data.TryGetProperty("userType", out var u) && u.ValueKind != JsonValueKind.Null ? u.GetInt32(): 0,
+                    ProfilePictureUrl = data.GetProperty("profileImage").GetString() ?? "",
                     Phone = data.GetProperty("phone").ValueKind == JsonValueKind.Null
                 ? ""
                 : data.GetProperty("phone").GetString() ?? ""

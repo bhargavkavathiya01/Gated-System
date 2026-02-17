@@ -45,7 +45,7 @@ namespace Gated_System.Services
             var userId = await _repo.CreateAsync(user);
 
             // assign default role - FlatOwner or none. For now assign 'FlatOwner' as example
-            await _repo.AssignRoleAsync(userId,7);
+            //await _repo.AssignRoleAsync(userId,7);
 
             // generate tokens
             //var roles = await _repo.GetRolesAsync(userId);

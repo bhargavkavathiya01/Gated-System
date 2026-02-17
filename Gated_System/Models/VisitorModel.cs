@@ -46,7 +46,7 @@ namespace Gated_System.Models
         public int BuildingId { get; set; }
         public string FlatId { get; set; }
         public int FlatOwnerId { get; set; }
-        public IFormFile? Image { get; set; }
+        //public IFormFile? Image { get; set; }
     }
 
     public class VisitorApprovalRequest

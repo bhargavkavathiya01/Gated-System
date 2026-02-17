@@ -1,4 +1,5 @@
-﻿using Gated_System.Models;
+﻿using Gated_System.Helpers;
+using Gated_System.Models;
 using Npgsql;
 using System.Text.Json;
 using static Gated_System.Models.QRModel;
@@ -108,7 +109,12 @@ namespace Gated_System.Repositories
 
                 // expected: {"status_code":201,"message":"Inserted","data":{"id":123}}
                 if (!root.TryGetProperty("data", out var dataEl) || !dataEl.TryGetProperty("id", out var idEl))
-                    throw new Exception("Unexpected response from sp_api_secretary: missing data.id");
+                {
+                    string? message = root.TryGetProperty("message", out var msgEl) ? msgEl.GetString(): "Unexpected response from API";
+                    //throw new Exception(ApiResponse.Fail(message).ToString());
+                    throw new Exception(message);
+
+                }
 
                 var id = idEl.GetInt32();
                 return id;
