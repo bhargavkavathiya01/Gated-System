@@ -85,6 +85,7 @@ namespace Gated_System.Repositories
                 userid = model.UserId,
                 roleid = model.RoleId,
                 guesttype = model.GuestType,
+                rentagreement = model.RentAgreement,
                 createdby = model.CreatedBy
             };
 

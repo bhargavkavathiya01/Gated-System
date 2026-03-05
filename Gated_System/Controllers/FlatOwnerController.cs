@@ -92,6 +92,35 @@ namespace Gated_System.Controllers
             }
         }
 
+        //[HttpPost("createpg")]
+        //public async Task<IActionResult> CreatePGMembers([FromBody] CreateFlatOwnerModel dto)
+        //{
+        //    try
+        //    {
+        //        var userId = GetCurrentUserId();
+        //        if (userId == -1)
+        //            return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+        //        dto.CreatedBy = userId;
+        //        var resultId = await _service.CreatePGMembers(dto);
+        //        return Ok(ApiResponse.Success("PG created successfully", new { id = resultId }));
+        //        //return Ok(new
+        //        //{
+        //        //    status = true,
+        //        //    message = "PG created successfully",
+        //        //    data = new { id = resultId }
+        //        //});
+        //    }
+        //    catch (ApplicationException ex)
+        //    {
+        //        return BadRequest(ApiResponse.Fail(ex.Message));
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // consider logging ex
+        //        return StatusCode(500, ApiResponse.Fail(ex.Message));
+        //    }
+        //}
+
         [HttpPost("createpg")]
         public async Task<IActionResult> CreatePGMembers([FromBody] CreateFlatOwnerModel dto)
         {

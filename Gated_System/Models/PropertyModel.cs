@@ -1,4 +1,6 @@
-﻿namespace Gated_System.Models
+﻿using Microsoft.AspNetCore.Http;
+
+namespace Gated_System.Models
 {
     public class PropertyModel
     {
@@ -57,6 +59,8 @@
         public string? Email { get; set; }
         public string? Phone { get; set; }
         public string? Password { get; set; }
+        public IFormFile? RentAgreementFile { get; set; }
+        public string? RentAgreement { get; set; }
     }
 
     public class PropertyViewModel
