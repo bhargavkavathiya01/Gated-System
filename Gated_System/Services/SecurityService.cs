@@ -190,5 +190,71 @@ namespace Gated_System.Services
             }
 
             return insertedId;
-        }    }
+        }
+
+        public async Task<int> CreateEmergencyEntryAsync(EmergencyEntryRequest req, int securityId)
+        {
+            if (req == null) throw new ApplicationException("Request cannot be null.");
+            if (string.IsNullOrWhiteSpace(req.VisitorName)) throw new ApplicationException("Visitor name is required.");
+            if (req.PropertyId <= 0) throw new ApplicationException("PropertyId is required.");
+
+            // 1. Create Visitor Request
+            var emergencyQr = "EMERGENCY-" + Guid.NewGuid().ToString("N")[..8].ToUpper(); 
+
+            var requestPayload = new
+            {
+                visitorname = req.VisitorName,
+                phone = req.Phone,
+                purpose = req.Purpose,
+                propertyid = req.PropertyId,
+                buildingid = req.BuildingId,
+                flatid = int.TryParse(req.FlatId, out var fId) ? fId : 0,
+                //flatid = req.FlatId,
+                requestedby = securityId,
+                qrcode = emergencyQr,
+                expiry = DateTime.UtcNow.AddMinutes(5).ToString("o"), 
+                qr_type = "manual",
+                max_uses = 1,
+                status = "Active"
+            };
+
+            int visitorRequestId = await _repo.CreateManualVisitorRequestAsync(requestPayload);
+
+            // 2. Automatically log the entry
+            var logPayload = new
+            {
+                visitorrequestid = visitorRequestId,
+                securityid = securityId,
+                entrytime = DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ"),
+                remarks = "Emergency Entry"
+            };
+
+            var logDoc = await _repo.CreateVisitorLogRawAsync(logPayload);
+            var logRoot = logDoc.RootElement;
+            var logStatus = logRoot.GetProperty("status_code").GetInt32();
+            if (logStatus != 201)
+            {
+                var msg = logRoot.TryGetProperty("message", out var m) ? m.GetString() : "Failed to log emergency entry.";
+                throw new ApplicationException(msg ?? "Failed to log emergency entry.");
+            }
+
+            // 3. Mark the request as Expired so it can't be used again
+            var updatePayload = new
+            {
+                id = visitorRequestId,
+                status = "Expired",
+                modifiedby = securityId
+            };
+            var updDoc = await _repo.UpdateVisitorRequestStatusRawAsync(updatePayload);
+            var updRoot = updDoc.RootElement;
+            var updStatus = updRoot.GetProperty("status_code").GetInt32();
+            if (updStatus < 200 || updStatus >= 300)
+            {
+                var msg = updRoot.TryGetProperty("message", out var m) ? m.GetString() : "Failed to update emergency request status.";
+                throw new ApplicationException(msg ?? "Failed to update emergency request status.");
+            }
+
+            return visitorRequestId;
+        }
+    }
 }

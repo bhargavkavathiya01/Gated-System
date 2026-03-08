@@ -57,4 +57,13 @@ namespace Gated_System.Models
         public int ApprovedBy { get; set; } // Flat Owner ID
     }
 
+    public class EmergencyEntryRequest
+    {
+        public string VisitorName { get; set; } = "";
+        public string? Phone { get; set; } = "";
+        public string Purpose { get; set; } = "";
+        public int PropertyId { get; set; }
+        public int? BuildingId { get; set; }
+        public string? FlatId { get; set; } = "";
+    }
 }

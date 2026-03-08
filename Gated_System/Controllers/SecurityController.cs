@@ -82,6 +82,30 @@ namespace Gated_System.Controllers
             }
         }
 
+        [HttpPost("emergency-entry")]
+        public async Task<IActionResult> EmergencyEntry([FromBody] EmergencyEntryRequest req)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+                // Call service
+                var id = await _service.CreateEmergencyEntryAsync(req, userId);
+                
+                return Ok(ApiResponse.Success("Emergency entry recorded successfully", new { id }));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ApiResponse.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail(ex.Message));
+            }
+        }
+
         //[HttpPost("checkout")]
         //public async Task<IActionResult> Checkout([FromBody] CheckoutRequest req)
         //{
