@@ -13,8 +13,13 @@ namespace Gated_System.Controllers
     public class AuthController : ControllerBase
     {
         private readonly IAuthService _auth;
+        private readonly IAwsS3Service _aws;
 
-        public AuthController(IAuthService auth) => _auth = auth;
+        public AuthController(IAuthService auth, IAwsS3Service aws)
+        {
+            _auth = auth;
+            _aws = aws;
+        }
 
         private int GetCurrentUserId()
         {
@@ -48,6 +53,8 @@ namespace Gated_System.Controllers
                 return BadRequest(ApiResponse.Fail(ex.Message));
             }
         }
+
+
 
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginModel dto)
@@ -86,9 +93,9 @@ namespace Gated_System.Controllers
             return Ok(ApiResponse.Success("Token refreshed successfully", res));
         }
 
-        [Authorize]
+        //[Authorize]
         [HttpPost("registerproperty")]
-        public async Task<IActionResult> Create([FromBody] PropertyCreateModel dto)
+        public async Task<IActionResult> Create([FromForm] PropertyCreateModel dto)
         {
             try
             {
@@ -96,6 +103,23 @@ namespace Gated_System.Controllers
                 if (userId == -1)
                     return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
                 dto.BuilderId = userId;
+
+                if (dto.RegistrationCertificate != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.RegistrationCertificate, "RegistrationCertificates");
+                    if (res.status) dto.RegistrationCertificateUrl = res.Data;
+                }
+                if (dto.PanCard != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.PanCard, "PanCards");
+                    if (res.status) dto.PanCardUrl = res.Data;
+                }
+                if (dto.TanCard != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.TanCard, "TanCards");
+                    if (res.status) dto.TanCardUrl = res.Data;
+                }
+
                 var id = await _auth.CreatePropertyAsync(dto);
                 var returnData = new
                 {
@@ -106,7 +130,10 @@ namespace Gated_System.Controllers
                     pincode = dto.Pincode,
                     builderid = dto.BuilderId,
                     buildingCount = dto.Buildings?.Count ?? 0,
-                    buildings = dto.Buildings
+                    buildings = dto.Buildings,
+                    registrationCertificate = dto.RegistrationCertificateUrl,
+                    panCard = dto.PanCardUrl,
+                    tanCard = dto.TanCardUrl
                 };
                 return Ok(ApiResponse.Success("Property created successfully", returnData));
             }

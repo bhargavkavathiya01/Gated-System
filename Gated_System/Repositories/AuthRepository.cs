@@ -829,7 +829,10 @@ namespace Gated_System.Repositories
                     address = property.Address,
                     city = property.City,
                     pincode = property.Pincode,
-                    builderid = property.BuilderId
+                    builderid = property.BuilderId,
+                    registrationcertificate = property.RegistrationCertificateUrl,
+                    pancard = property.PanCardUrl,
+                    tancard = property.TanCardUrl
                 };
                 var propJson = JsonSerializer.Serialize(propPayload);
 

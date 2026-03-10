@@ -81,6 +81,18 @@ namespace Gated_System.Services
             var user = userResult.Data!;
 
             var roles = await _repo.GetRolesAsync(user.Id);
+
+            var registerTypes = await _repo.GetRegisterTypesAsync();
+            var secretaryType = registerTypes.FirstOrDefault(r => r.RegisterTypeName.ToLower() == "secretary" || r.RegisterTypeName.ToLower() == "secretory");
+
+            if (secretaryType != null && user.UserRegistrationTypeId == secretaryType.Id)
+            {
+                if (!roles.Any())
+                {
+                    return ServiceResult<AuthResponseModel>.Fail("Your society is pending admin approval. You can login once it is approved.");
+                }
+            }
+
             var accessToken = _jwt.GenerateAccessToken(user.Id, user.Email, roles, out var accessExpiry);
             var refreshToken = _jwt.GenerateRefreshToken();
             var refreshExpiry = DateTime.UtcNow.AddDays(_jwtOptions.RefreshTokenExpirationDays);

@@ -24,6 +24,14 @@ namespace Gated_System.Models
         public int BuilderId { get; set; }
         public int buildingCount { get; set; }
         public List<string> Buildings { get; set; } = new List<string>();
+        
+        public IFormFile? RegistrationCertificate { get; set; }
+        public IFormFile? PanCard { get; set; }
+        public IFormFile? TanCard { get; set; }
+
+        public string? RegistrationCertificateUrl { get; set; }
+        public string? PanCardUrl { get; set; }
+        public string? TanCardUrl { get; set; }
     }
 
     public class CreateSecretaryModel
