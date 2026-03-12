@@ -80,6 +80,8 @@
     {
         public string User { get; set; } = "";
         public string Password { get; set; } = "";
+        public string? DeviceToken { get; set; }
+        public string? Platform { get; set; }
     }
 
     public class RefreshTokenModel

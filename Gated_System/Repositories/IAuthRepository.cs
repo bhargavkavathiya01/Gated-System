@@ -18,5 +18,6 @@ namespace Gated_System.Repositories
         Task<int> CreatePropertyAsync(PropertyCreateModel property);
         Task<bool> UpdatePasswordAsync(UpdatePasswordModel model);
         Task<IEnumerable<RegisterTypeModel>> GetRegisterTypesAsync();
+        Task<string> SaveDeviceTokenRepoAsync(UserDeviceTokenModel model);
     }
 }

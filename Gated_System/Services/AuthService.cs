@@ -99,6 +99,24 @@ namespace Gated_System.Services
 
             await _repo.SaveRefreshTokenAsync(user.Id, refreshToken, refreshExpiry);
 
+            if (!string.IsNullOrEmpty(dto.DeviceToken) && !string.IsNullOrEmpty(dto.Platform))
+            {
+                var tokenDto = new UserDeviceTokenModel
+                {
+                    UserId = user.Id,
+                    DeviceToken = dto.DeviceToken,
+                    Platform = dto.Platform
+                };
+                try 
+                {
+                    await _repo.SaveDeviceTokenRepoAsync(tokenDto);
+                } 
+                catch 
+                {
+                   // best effort context for token
+                }
+            }
+
             return ServiceResult<AuthResponseModel>.Success(new AuthResponseModel
             {
                 AccessToken = accessToken,

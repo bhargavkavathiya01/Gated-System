@@ -183,7 +183,8 @@ namespace Gated_System.Services
                         {
                             { "visitorRequestId", insertedId.ToString() },
                             { "action", "approve_reject" },
-                            { "type", "visitor_request" }
+                            { "type", "visitor_request" },
+                            { "notificationId", "1" }
                         }
                     );
                 }

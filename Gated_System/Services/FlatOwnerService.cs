@@ -404,7 +404,8 @@ namespace Gated_System.Services
                     {
                         { "visitorRequestId", req.RequestId.ToString() },
                         { "status", req.Status },
-                        { "type", "approval_result" }
+                        { "type", "approval_result" },
+                        { "notificationId", "2" }
                     }
                 );
             }
