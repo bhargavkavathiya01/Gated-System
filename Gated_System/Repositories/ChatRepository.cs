@@ -1,4 +1,4 @@
-﻿using Gated_System.Models;
+using Gated_System.Models;
 using Npgsql;
 using System.Text.Json;
 
@@ -26,7 +26,8 @@ namespace Gated_System.Repositories
                 propertyid = request.PropertyId,
                 buildingid = request.BuildingId,
                 groupname = request.GroupName,
-                createdby = request.CreatedBy
+                createdby = request.CreatedBy,
+                isannouncement = request.IsAnnouncement
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);
@@ -345,6 +346,13 @@ namespace Gated_System.Repositories
                 DateTime.TryParse(coEl.GetString(), out createdOn);
             }
 
+            bool isAnnouncement = false;
+            if (el.TryGetProperty("isannouncement", out var iaEl))
+            {
+                if (iaEl.ValueKind == JsonValueKind.True || iaEl.ValueKind == JsonValueKind.False)
+                    isAnnouncement = iaEl.GetBoolean();
+            }
+
             return new GroupChatModel
             {
                 Id = id,
@@ -352,7 +360,8 @@ namespace Gated_System.Repositories
                 BuildingId = buildingId,
                 GroupName = groupName,
                 CreatedBy = createdBy,
-                CreatedOn = createdOn
+                CreatedOn = createdOn,
+                IsAnnouncement = isAnnouncement
             };
         }
 

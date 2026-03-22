@@ -1,4 +1,4 @@
-﻿namespace Gated_System.Models
+namespace Gated_System.Models
 {
     public class ChatMessageModel
     {
@@ -15,6 +15,7 @@
         public int? BuildingId { get; set; }
         public int CreatedBy { get; set; }
         public string GroupName { get; set; } 
+        public bool IsAnnouncement { get; set; } = false;
     }
     public class GetChatFeedRequest
     {
@@ -60,6 +61,7 @@
         public string GroupName { get; set; } = string.Empty;
         public int CreatedBy { get; set; }
         public DateTime CreatedOn { get; set; }
+        public bool IsAnnouncement { get; set; } = false;
     }
 
     public class GroupRequestChatModel
