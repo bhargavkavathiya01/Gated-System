@@ -16,5 +16,6 @@ namespace Gated_System.Services
         Task<ChatPollFeedModel?> GetPollByPollIdAsync(int pollId, int userId);
         Task<List<int>> GetChatMemberUserIdsAsync(int chatId);
         Task<List<string>> GetFcmTokensForUserIdsAsync(List<int> userIds);
+        Task<IEnumerable<GroupChatModel>> GetChatGroupsByPropertyIdAsync(int propertyId);
     }
 }

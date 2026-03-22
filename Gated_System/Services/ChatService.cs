@@ -108,5 +108,10 @@ namespace Gated_System.Services
                 return new List<string>();
             return await _repo.GetFcmTokensForUserIdsAsync(userIds);
         }
+
+        public async Task<IEnumerable<GroupChatModel>> GetChatGroupsByPropertyIdAsync(int propertyId)
+        {
+            return await _repo.GetChatGroupsByPropertyIdAsync(propertyId);
+        }
     }
 }

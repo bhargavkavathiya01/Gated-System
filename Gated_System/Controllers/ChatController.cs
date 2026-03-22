@@ -258,6 +258,16 @@ namespace Gated_System.Controllers
         //    }
         //}
 
+        [HttpGet("getchatgroupsbypropertyid/{propertyId:int}")]
+        public async Task<IActionResult> GetChatGroupsByPropertyId(int propertyId)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+            var groups = await _chatService.GetChatGroupsByPropertyIdAsync(propertyId);
+            return Ok(ApiResponse.Success("Chat groups fetched successfully", groups));
+        }
 
     }
 }

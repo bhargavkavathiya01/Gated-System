@@ -774,5 +774,61 @@ namespace Gated_System.Repositories
 
             return tokens;
         }
+
+        public async Task<IEnumerable<GroupChatModel>> GetChatGroupsByPropertyIdAsync(int propertyId)
+        {
+            const string query = @"SELECT public.sp_api_getchatgroups_by_propertyid(@p_propertyid)::text;";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_propertyid", propertyId);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+
+                if (scalarResult is null || scalarResult is DBNull)
+                    return Enumerable.Empty<GroupChatModel>();
+
+                var resultJson = scalarResult.ToString()!;
+                using var doc = JsonDocument.Parse(resultJson);
+                var root = doc.RootElement;
+
+                if (!root.TryGetProperty("status_code", out var statusEl))
+                    throw new Exception("sp_api_getchatgroups_by_propertyid: missing status_code");
+
+                var statusCode = statusEl.GetInt32();
+                if (statusCode != 200)
+                {
+                    var msg = root.TryGetProperty("message", out var msgEl)
+                        ? msgEl.GetString()
+                        : "Unknown error from sp_api_getchatgroups_by_propertyid";
+                    throw new ApplicationException($"GetChatGroupsByPropertyId failed. Status: {statusCode}, Message: {msg}");
+                }
+
+                if (!root.TryGetProperty("data", out var dataEl) || dataEl.ValueKind == JsonValueKind.Null)
+                    return Enumerable.Empty<GroupChatModel>();
+
+                var list = new List<GroupChatModel>();
+
+                if (dataEl.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var el in dataEl.EnumerateArray())
+                    {
+                        list.Add(ParseGroupChatElement(el));
+                    }
+                }
+                else if (dataEl.ValueKind == JsonValueKind.Object)
+                {
+                    list.Add(ParseGroupChatElement(dataEl));
+                }
+
+                return list;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
     }
 }
