@@ -1,4 +1,4 @@
-﻿using Gated_System.Models;
+using Gated_System.Models;
 using Gated_System.Repositories;
 
 namespace Gated_System.Services
@@ -26,13 +26,13 @@ namespace Gated_System.Services
             return await _repo.GetMessagesAsync(request);
         }
 
-        public async Task<ChatMessageModel> AddMessageAsync(int chatId, int userId, string message)
+        public async Task<ChatMessageModel> AddMessageAsync(int chatId, int userId, string message, string? mediaUrl = null, string? mediaType = null)
         {
-            if (string.IsNullOrWhiteSpace(message))
-                throw new ArgumentException("Message cannot be empty", nameof(message));
+            if (string.IsNullOrWhiteSpace(message) && string.IsNullOrWhiteSpace(mediaUrl))
+                throw new ArgumentException("Message or Media content must be provided");
 
             // could check if user is part of this chat group using another SP
-            return await _repo.AddMessageAsync(chatId, userId, message.Trim());
+            return await _repo.AddMessageAsync(chatId, userId, message?.Trim() ?? string.Empty, mediaUrl, mediaType);
         }
 
         public async Task<IEnumerable<GroupChatModel>> GetUserChatsAsync(GroupRequestChatModel request)

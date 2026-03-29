@@ -150,7 +150,7 @@ namespace Gated_System.Repositories
         /// <summary>
         /// Add a new message to a chat.
         /// </summary>
-        public async Task<ChatMessageModel> AddMessageAsync(int chatId, int userId, string message)
+        public async Task<ChatMessageModel> AddMessageAsync(int chatId, int userId, string message, string? mediaUrl = null, string? mediaType = null)
         {
             const string query = @"SELECT public.sp_api_groupchatmessages(@p_operation, @p_json)::text;";
 
@@ -158,7 +158,9 @@ namespace Gated_System.Repositories
             {
                 chatid = chatId,
                 userid = userId,
-                message = message
+                message = message,
+                mediaurl = mediaUrl,
+                mediatype = mediaType
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);
@@ -201,6 +203,8 @@ namespace Gated_System.Repositories
                     ChatId = dataEl.GetProperty("chatid").GetInt32(),
                     UserId = dataEl.GetProperty("userid").GetInt32(),
                     Message = dataEl.GetProperty("message").GetString() ?? string.Empty,
+                    MediaUrl = dataEl.TryGetProperty("mediaurl", out var mediaUrlEl) && mediaUrlEl.ValueKind == JsonValueKind.String ? mediaUrlEl.GetString() : null,
+                    MediaType = dataEl.TryGetProperty("mediatype", out var mediaTypeEl) && mediaTypeEl.ValueKind == JsonValueKind.String ? mediaTypeEl.GetString() : null,
                     CreatedOn = DateTime.UtcNow // DB has now() but not returned; this is approximate
                 };
 
@@ -232,6 +236,14 @@ namespace Gated_System.Repositories
                 ? mEl.GetString() ?? string.Empty
                 : string.Empty;
 
+            var mediaUrl = el.TryGetProperty("mediaurl", out var mediaUrlEl) && mediaUrlEl.ValueKind == JsonValueKind.String
+                ? mediaUrlEl.GetString()
+                : null;
+
+            var mediaType = el.TryGetProperty("mediatype", out var mediaTypeEl) && mediaTypeEl.ValueKind == JsonValueKind.String
+                ? mediaTypeEl.GetString()
+                : null;
+
             DateTime createdOn;
             if (el.TryGetProperty("createdon", out var createdEl) && createdEl.ValueKind == JsonValueKind.String)
             {
@@ -249,6 +261,8 @@ namespace Gated_System.Repositories
                 ChatId = chatId,
                 UserId = userId,
                 Message = message,
+                MediaUrl = mediaUrl,
+                MediaType = mediaType,
                 CreatedOn = createdOn
             };
         }

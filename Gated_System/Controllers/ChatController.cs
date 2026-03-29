@@ -1,4 +1,4 @@
-﻿using Gated_System.Helpers;
+using Gated_System.Helpers;
 using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Http;
@@ -12,10 +12,12 @@ namespace Gated_System.Controllers
     public class ChatController : ControllerBase
     {
         private readonly IChatService _chatService;
+        private readonly IAwsS3Service _awsS3Service;
 
-        public ChatController(IChatService chatService)
+        public ChatController(IChatService chatService, IAwsS3Service awsS3Service)
         {
             _chatService = chatService;
+            _awsS3Service = awsS3Service;
         }
 
         [HttpPost("createorgetchatgroup")]
@@ -75,6 +77,37 @@ namespace Gated_System.Controllers
                 status = true,
                 message = "Chats Fetched Successfully",
                 data = new { chats = chats }
+            });
+        }
+
+        [HttpPost("uploadchatmedia")]
+        public async Task<IActionResult> UploadChatMedia(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(ApiResponse.Fail("No file uploaded"));
+
+            var userId = GetCurrentUserId();
+            if (userId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+            var result = await _awsS3Service.UploadFileAsync(file, "chat_media");
+
+            if (!result.status)
+                return StatusCode(500, ApiResponse.Fail("Error uploading file: " + result.Message));
+
+            var fileExtension = Path.GetExtension(file.FileName)?.ToLower() ?? "";
+            var isImage = fileExtension == ".jpg" || fileExtension == ".jpeg" || fileExtension == ".png" || fileExtension == ".gif" || fileExtension == ".webp";
+            var mediaType = isImage ? "image" : "file";
+
+            return Ok(new
+            {
+                status = true,
+                message = "Media uploaded successfully",
+                data = new
+                {
+                    mediaUrl = result.Data,
+                    mediaType = mediaType
+                }
             });
         }
 

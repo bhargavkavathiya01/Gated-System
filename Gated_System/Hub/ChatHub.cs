@@ -1,4 +1,4 @@
-﻿//using Gated_System.Models;
+//using Gated_System.Models;
 //using Gated_System.Services;
 //using Microsoft.AspNetCore.SignalR;
 
@@ -159,6 +159,81 @@ public class ChatHub : Hub
             // Log the error for debugging purposes
             Console.WriteLine("Error in SendMessage: " + ex.Message);
             await Clients.Caller.SendAsync("Error", "An error occurred while processing your message.");
+        }
+    }
+
+    public async Task SendMediaMessage(SendMediaMessageRequest request)
+    {
+        try
+        {
+            if (string.IsNullOrWhiteSpace(request.MediaUrl))
+            {
+                await Clients.Caller.SendAsync("Error", "MediaUrl cannot be empty.");
+                return;
+            }
+
+            int userId = request.UserId;
+
+            if (userId <= 0)
+            {
+                await Clients.Caller.SendAsync("Error", "Invalid UserId.");
+                return;
+            }
+
+            var saved = await _chatService.AddMessageAsync(request.ChatId, userId, request.Message, request.MediaUrl, request.MediaType);
+
+            await Clients.Group(GroupName(request.ChatId)).SendAsync("ReceiveMessage", new
+            {
+                status = true,
+                message = "Media message sent successfully",
+                data = saved
+            });
+
+            // Send push notifications to chat members (excluding sender)
+            _ = Task.Run(async () =>
+            {
+                try
+                {
+                    var memberUserIds = await _chatService.GetChatMemberUserIdsAsync(request.ChatId);
+                    var recipientUserIds = memberUserIds.Where(id => id != userId).ToList();
+                    
+                    if (recipientUserIds.Any())
+                    {
+                        var fcmTokens = await _chatService.GetFcmTokensForUserIdsAsync(recipientUserIds);
+                        
+                        if (fcmTokens.Any())
+                        {
+                            var notificationBody = string.IsNullOrWhiteSpace(request.Message) 
+                                ? (request.MediaType == "image" ? "📷 Image" : "📄 File")
+                                : (request.Message.Length > 100 ? request.Message.Substring(0, 100) + "..." : request.Message);
+
+                            var data = new Dictionary<string, string>
+                            {
+                                { "type", "media_message" },
+                                { "chatId", request.ChatId.ToString() },
+                                { "messageId", saved.Id.ToString() },
+                                { "userId", userId.ToString() }
+                            };
+
+                            await _pushNotificationHelper.SendToDevicesAsync(
+                                fcmTokens,
+                                "New Media Message",
+                                notificationBody,
+                                data
+                            );
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine($"Error sending push notification for media message: {ex.Message}");
+                }
+            });
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine("Error in SendMediaMessage: " + ex.Message);
+            await Clients.Caller.SendAsync("Error", "An error occurred while processing your media message.");
         }
     }
 

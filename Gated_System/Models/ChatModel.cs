@@ -6,6 +6,8 @@ namespace Gated_System.Models
         public int ChatId { get; set; }
         public int UserId { get; set; }
         public string Message { get; set; } = string.Empty;
+        public string? MediaUrl { get; set; }
+        public string? MediaType { get; set; }
         public DateTime CreatedOn { get; set; }
     }
 
@@ -51,6 +53,15 @@ namespace Gated_System.Models
         public int UserId { get; set; }
         public int ChatId { get; set; }
         public string Message { get; set; }
+    }
+
+    public class SendMediaMessageRequest
+    {
+        public int UserId { get; set; }
+        public int ChatId { get; set; }
+        public string MediaUrl { get; set; } = string.Empty;
+        public string MediaType { get; set; } = string.Empty;
+        public string Message { get; set; } = string.Empty;
     }
 
     public class GroupChatModel
