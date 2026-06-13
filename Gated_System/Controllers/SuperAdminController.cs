@@ -71,6 +71,9 @@ namespace Gated_System.Controllers
                 if (dto == null) return BadRequest(new { message = "Body is required." });
                 if (string.IsNullOrWhiteSpace(dto.IsVerified)) return BadRequest(new { message = "IsVerified is required." });
 
+                var adminId = GetCurrentUserId();
+                if (adminId == -1) return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+                dto.ModifiedBy = adminId;
 
                 string resultMessage = await _service.UpdatePropertyVerificationAsync(dto);
 

@@ -33,13 +33,14 @@ namespace Gated_System.Services
             {
                 Firstname = dto.Firstname,
                 Middlename=dto.Middlename,
-                Lastname=dto.Lastname,
+                Lastname=dto.Lastname,  
                 Email = dto.Email,
                 Phone = dto.Phone,
                 Password = dto.Password,
-                //PasswordSalt = salt,
                 IsActive = true,
-                RegisterTypeId = dto.RegisterTypeId
+                RegisterTypeId = dto.RegisterTypeId,
+                AadharCardUrl = dto.AadharCardUrl,
+                ElectricityBillUrl = dto.ElectricityBillUrl
             };
 
             var userId = await _repo.CreateAsync(user);

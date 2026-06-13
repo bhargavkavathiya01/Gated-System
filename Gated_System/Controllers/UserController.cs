@@ -123,5 +123,71 @@ namespace Gated_System.Controllers
                 data = new { }
             });
         }
+
+        [HttpGet("getallusers")]
+        public async Task<IActionResult> GetAllUsers()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1) return Unauthorized(new { status = false, message = "Invalid or expired token" });
+
+            var result = await _userService.GetAllUsersAsync();
+            if (!result.status) return BadRequest(new { status = false, message = result.Message });
+            return Ok(new { status = true, message = result.Message, data = result.Data });
+        }
+
+        [HttpPost("addSOScontact")]
+        public async Task<IActionResult> AddSosContact([FromBody] AddSosContactModel dto)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1) return Unauthorized(new { status = false, message = "Invalid or expired token" });
+
+            var result = await _userService.AddSosContactAsync(userId, dto);
+            if (!result.status) return BadRequest(new { status = false, message = result.Message });
+            return Ok(new { status = true, message = result.Message, data = new { id = result.Data } });
+        }
+
+        [HttpGet("getsoscontacts")]
+        public async Task<IActionResult> GetSosContacts()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1) return Unauthorized(new { status = false, message = "Invalid or expired token" });
+
+            var result = await _userService.GetSosContactsAsync(userId);
+            if (!result.status) return BadRequest(new { status = false, message = result.Message });
+            return Ok(new { status = true, message = result.Message, data = result.Data });
+        }
+
+        [HttpDelete("removeSOScontact/{id}")]
+        public async Task<IActionResult> RemoveSosContact(int id)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1) return Unauthorized(new { status = false, message = "Invalid or expired token" });
+
+            var result = await _userService.RemoveSosContactAsync(id, userId);
+            if (!result.status) return BadRequest(new { status = false, message = result.Message });
+            return Ok(new { status = true, message = result.Message });
+        }
+
+        [HttpPut("updateSOScontact/{id}")]
+        public async Task<IActionResult> UpdateSosRelation(int id, [FromBody] UpdateSosRelationModel dto)
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1) return Unauthorized(new { status = false, message = "Invalid or expired token" });
+
+            var result = await _userService.UpdateSosRelationAsync(id, userId, dto);
+            if (!result.status) return BadRequest(new { status = false, message = result.Message });
+            return Ok(new { status = true, message = result.Message });
+        }
+
+        [HttpPost("triggersos")]
+        public async Task<IActionResult> TriggerSos()
+        {
+            var userId = GetCurrentUserId();
+            if (userId == -1) return Unauthorized(new { status = false, message = "Invalid or expired token" });
+
+            var result = await _userService.TriggerSosAsync(userId);
+            if (!result.status) return BadRequest(new { status = false, message = result.Message });
+            return Ok(new { status = true, message = result.Message });
+        }
     }
 }

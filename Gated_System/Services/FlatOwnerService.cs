@@ -357,7 +357,8 @@ namespace Gated_System.Services
                 {
                     id = req.RequestId,
                     status = "Active",
-                    modifiedby = req.ApprovedBy
+                    modifiedby = req.ApprovedBy,
+                    approvedby = req.ApprovedBy
                 };
                 using var updDoc = await _securityRepo.UpdateVisitorRequestStatusRawAsync(updatePayload);
                 if (updDoc.RootElement.GetProperty("status_code").GetInt32() != 200)
@@ -382,7 +383,8 @@ namespace Gated_System.Services
                 {
                     id = req.RequestId,
                     status = "Expired",
-                    modifiedby = req.ApprovedBy
+                    modifiedby = req.ApprovedBy,
+                    approvedby = req.ApprovedBy
                 };
                 using var updDoc = await _securityRepo.UpdateVisitorRequestStatusRawAsync(updatePayload);
             }

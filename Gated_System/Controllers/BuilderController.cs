@@ -13,8 +13,13 @@ namespace Gated_System.Controllers
     public class BuilderController : ControllerBase
     {
         private readonly IBuilderService _service;
+        private readonly IAwsS3Service _aws;
 
-        public BuilderController(IBuilderService service) => _service = service;
+        public BuilderController(IBuilderService service, IAwsS3Service aws)
+        {
+            _service = service;
+            _aws = aws;
+        }
 
         private int GetCurrentUserId()
         {
@@ -77,13 +82,24 @@ namespace Gated_System.Controllers
         }
 
         [HttpPost("createflatowner")]
-        public async Task<IActionResult> CreateFlatOwner([FromBody] CreateFlatOwnerModel dto)
+        public async Task<IActionResult> CreateFlatOwner([FromForm] CreateFlatOwnerModel dto)
         {
             try
             {
                 var userId = GetCurrentUserId();
                 if (userId == -1)
                     return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+                if (dto.AadharCard != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.AadharCard, "AadharCards");
+                    if (res.status) dto.AadharCardUrl = res.Data;
+                }
+                if (dto.ElectricityBill != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.ElectricityBill, "ElectricityBills");
+                    if (res.status) dto.ElectricityBillUrl = res.Data;
+                }
 
                 // Convert to request model
                 var requestModel = new CreateFlatOwnerRequestModel
@@ -94,7 +110,9 @@ namespace Gated_System.Controllers
                     UserId = dto.UserId,
                     RoleId = dto.RoleId,
                     GuestType = dto.GuestType,
-                    RequestedBy = userId
+                    RequestedBy = userId,
+                    AadharCardUrl = dto.AadharCardUrl,
+                    ElectricityBillUrl = dto.ElectricityBillUrl
                 };
 
                 var resultId = await _service.CreateFlatOwnerRequestAsync(requestModel);

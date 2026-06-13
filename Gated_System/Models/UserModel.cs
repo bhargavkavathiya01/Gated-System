@@ -1,10 +1,10 @@
-﻿namespace Gated_System.Models
+namespace Gated_System.Models
 {
     public class UserModel
     {
         public int Id { get; set; }
         public string Firstname { get; set; } = "";
-        public string Middlename { get; set; } = "";
+        public string? Middlename { get; set; } = "";
         public string Lastname { get; set; } = "";
         public string Email { get; set; } = "";
         public string Phone { get; set; } = "";
@@ -14,6 +14,8 @@
         public int? RegisterTypeId { get; set; }
         public string? ProfilePictureUrl { get; set; }
         public IFormFile? ProfileImage { get; set; }
+        public string? AadharCardUrl { get; set; }
+        public string? ElectricityBillUrl { get; set; }
     }
 
     public class UserProfileUpdateModel
@@ -42,7 +44,7 @@
     {
         public int Id { get; set; }
         public string Firstname { get; set; } = "";
-        public string Middlename { get; set; } = "";
+        public string? Middlename { get; set; } = "";
         public string Lastname { get; set; } = "";
         public string Email { get; set; } = "";
         public string Phone { get; set; } = "";
@@ -55,7 +57,7 @@
     {
         public int Id { get; set; }
         public string Firstname { get; set; } = "";
-        public string Middlename { get; set; } = "";
+        public string? Middlename { get; set; } = "";
         public string Lastname { get; set; } = "";
         public string Email { get; set; } = "";
         public string Phone { get; set; } = "";
@@ -63,17 +65,23 @@
         //public string? ProfileImage { get; set; } = "";
         public int? UserRegistrationTypeId { get; set; }
         public string? ProfilePictureUrl { get; set; } = "";
+        public string? AadharCard { get; set; }
+        public string? ElectricityBill { get; set; }
     }
 
     public class RegisterModel
     {
         public string Firstname { get; set; } = "";
-        public string Middlename { get; set; } = "";
+        public string? Middlename { get; set; } = "";
         public string Lastname { get; set; } = "";
         public string Email { get; set; } = "";
         public string Phone { get; set; } = "";
         public string Password { get; set; } = "";
         public int RegisterTypeId { get; set; }
+        public IFormFile? AadharCard { get; set; }
+        public IFormFile? ElectricityBill { get; set; }
+        public string? AadharCardUrl { get; set; }
+        public string? ElectricityBillUrl { get; set; }
     }
 
     public class LoginModel

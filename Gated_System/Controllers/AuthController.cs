@@ -35,17 +35,27 @@ namespace Gated_System.Controllers
         }
 
         [HttpPost("register")]
-        public async Task<IActionResult> Register([FromBody] RegisterModel dto)
+        public async Task<IActionResult> Register([FromForm] RegisterModel dto)
         {
             try
             {
-                var res = await _auth.RegisterAsync(dto);
-                //return Ok(ApiResponse.Success("User registered successfully", res));
+                if (dto.AadharCard != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.AadharCard, "AadharCards");
+                    if (res.status) dto.AadharCardUrl = res.Data;
+                }
+                if (dto.ElectricityBill != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.ElectricityBill, "ElectricityBills");
+                    if (res.status) dto.ElectricityBillUrl = res.Data;
+                }
+
+                var res2 = await _auth.RegisterAsync(dto);
                 return Ok(new
                 {
                     status = true,
                     message = "User registered Successfully",
-                    data = res
+                    data = res2
                 });
             }
             catch (ApplicationException ex)

@@ -115,7 +115,7 @@ namespace Gated_System.Repositories
             {
                 id = dto.PropertyId,
                 isverified = dto.IsVerified,
-                //modifiedby = dto.ModifiedBy
+                verifiedby = dto.ModifiedBy
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);

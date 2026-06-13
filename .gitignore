@@ -3,3 +3,12 @@
 ################################################################################
 
 /.vs
+
+# Secrets - never commit
+**/appsettings.json
+**/appsettings.Development.json
+
+# Build outputs
+**/bin/
+**/obj/
+**/publish/

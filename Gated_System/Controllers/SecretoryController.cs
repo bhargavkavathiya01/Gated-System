@@ -11,8 +11,13 @@ namespace Gated_System.Controllers
     public class SecretoryController : ControllerBase
     {
         private readonly ISecretoryService _service;
+        private readonly IAwsS3Service _aws;
 
-        public SecretoryController(ISecretoryService service) => _service = service;
+        public SecretoryController(ISecretoryService service, IAwsS3Service aws)
+        {
+            _service = service;
+            _aws = aws;
+        }
 
         private int GetCurrentUserId()
         {
@@ -27,6 +32,63 @@ namespace Gated_System.Controllers
             return uid;
         }
 
+
+        [HttpPost("uploadsocietyimages")]
+        public async Task<IActionResult> UploadSocietyImages([FromForm] SocietyImageUploadModel dto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+                if (dto.Images == null || dto.Images.Count == 0)
+                    return BadRequest(ApiResponse.Fail("At least one image is required."));
+
+                dto.UploadedBy = userId;
+
+                var uploadedUrls = new List<string>();
+                foreach (var file in dto.Images)
+                {
+                    var res = await _aws.UploadFileAsync(file, "SocietyImages");
+                    if (!res.status)
+                        return BadRequest(ApiResponse.Fail($"Failed to upload {file.FileName}: {res.Message}"));
+                    uploadedUrls.Add(res.Data);
+                }
+
+                var ids = await _service.UploadSocietyImagesAsync(dto, uploadedUrls);
+                return Ok(ApiResponse.Success("Society images uploaded successfully", new { count = ids.Count, ids }));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ApiResponse.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail(ex.Message));
+            }
+        }
+
+        [HttpGet("getsocietyimages")]
+        public async Task<IActionResult> GetSocietyImages([FromQuery] int propertyId)
+        {
+            try
+            {
+                if (propertyId <= 0)
+                    return BadRequest(ApiResponse.Fail("Invalid propertyId."));
+
+                var images = await _service.GetSocietyImagesAsync(propertyId);
+                return Ok(ApiResponse.Success("Society images fetched successfully", images));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ApiResponse.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail(ex.Message));
+            }
+        }
 
         [HttpPost("createcommitteemember")]
         public async Task<IActionResult> CreateCommitteeMember([FromBody] CreateCommitteeModel dto)

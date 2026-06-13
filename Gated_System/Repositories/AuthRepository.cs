@@ -24,10 +24,12 @@ namespace Gated_System.Repositories
                 lastname = user.Lastname,
                 email = user.Email,
                 phone = user.Phone,
-                password = user.Password,   // SP will hash this (MD5 as you said)
+                password = user.Password,
                 isactive = user.IsActive,
                 createdby = user.CreatedBy,
-                registertypeid = user.RegisterTypeId
+                registertypeid = user.RegisterTypeId,
+                aadharcard = user.AadharCardUrl,
+                electricitybill = user.ElectricityBillUrl
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);
@@ -217,7 +219,9 @@ namespace Gated_System.Repositories
                     ProfilePictureUrl = data.GetProperty("profileImage").GetString() ?? "",
                     Phone = data.GetProperty("phone").ValueKind == JsonValueKind.Null
                 ? ""
-                : data.GetProperty("phone").GetString() ?? ""
+                : data.GetProperty("phone").GetString() ?? "",
+                    AadharCard = data.TryGetProperty("aadharCard", out var adk) && adk.ValueKind != JsonValueKind.Null ? adk.GetString() : null,
+                    ElectricityBill = data.TryGetProperty("electricityBill", out var ebk) && ebk.ValueKind != JsonValueKind.Null ? ebk.GetString() : null
                 };
 
                 return ServiceResult<UserResponseModel>.Success(userData);

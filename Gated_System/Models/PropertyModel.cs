@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Http;
+using System.Text.Json.Serialization;
+
 
 namespace Gated_System.Models
 {
@@ -60,6 +62,12 @@ namespace Gated_System.Models
         public string? GuestType { get; set; }
         public int CreatedBy { get; set; } //Builder Id
 
+        // Documents
+        public IFormFile? AadharCard { get; set; }
+        public IFormFile? ElectricityBill { get; set; }
+        public string? AadharCardUrl { get; set; }
+        public string? ElectricityBillUrl { get; set; }
+
         // User Registration Fields
         public string? Firstname { get; set; }
         public string? Middlename { get; set; }
@@ -92,9 +100,28 @@ namespace Gated_System.Models
         public int BuilderId { get; set; }
         public string BuilderName { get; set; }
         public string IsVerified { get; set; } = "";
+        public int? VerifiedBy { get; set; }
+        public string? VerifiedByName { get; set; }
         public DateTime CreatedOn { get; set; }
         public DateTime? ModifiedOn { get; set; }
+        [JsonPropertyName("registrationcertificate")]
+        public string? RegistrationCertificateUrl { get; set; }
+        [JsonPropertyName("pancard")]
+        public string? PanCardUrl { get; set; }
+        [JsonPropertyName("tancard")]
+        public string? TanCardUrl { get; set; }
+        //public List<BuildingViewModel>? Buildings { get; set; }
     }
+
+    public class BuildingViewModel
+    {
+        [JsonPropertyName("id")]
+        public int BuildingId { get; set; }
+        [JsonPropertyName("buildingname")]
+        public string BuildingName { get; set; } = "";
+    }
+
+
 
     public class PropertyMemberRequest
     {
@@ -155,6 +182,8 @@ namespace Gated_System.Models
         public int RoleId { get; set; }
         public string? GuestType { get; set; }
         public int RequestedBy { get; set; } // Builder Id
+        public string? AadharCardUrl { get; set; }
+        public string? ElectricityBillUrl { get; set; }
     }
 
     public class FlatOwnerRequestResponseModel
@@ -181,6 +210,8 @@ namespace Gated_System.Models
         public DateTime? ApprovedOn { get; set; }
         public string? RejectionReason { get; set; }
         public DateTime CreatedOn { get; set; }
+        public string? AadharCard { get; set; }
+        public string? ElectricityBill { get; set; }
     }
 
     public class ApproveFlatOwnerRequestModel

@@ -287,12 +287,18 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
         };
     });
 
-// Initialize FirebaseApp using service account json file placed in project root (firebase-service-account.json).
-// Ensure the file is deployed and path correct. You already added the JSON file.
-FirebaseApp.Create(new AppOptions
+// Firebase: load from Base64-encoded env variable (production) or local file (development)
+var firebaseBase64 = Environment.GetEnvironmentVariable("FIREBASE_SERVICE_ACCOUNT_JSON");
+GoogleCredential firebaseCredential;
+if (!string.IsNullOrWhiteSpace(firebaseBase64))
 {
-    Credential = GoogleCredential.FromFile("firebase-service-account.json")
-});
+    var firebaseJson = System.Text.Encoding.UTF8.GetString(Convert.FromBase64String(firebaseBase64));
+    firebaseCredential = GoogleCredential.FromJson(firebaseJson);
+}
+else
+    firebaseCredential = GoogleCredential.FromFile("firebase-service-account.json");
+
+FirebaseApp.Create(new AppOptions { Credential = firebaseCredential });
 
 // PostgreSQL
 var connectionString = builder.Configuration.GetConnectionString("Default")
