@@ -40,7 +40,8 @@ namespace Gated_System.Services
                 IsActive = true,
                 RegisterTypeId = dto.RegisterTypeId,
                 AadharCardUrl = dto.AadharCardUrl,
-                ElectricityBillUrl = dto.ElectricityBillUrl
+                ElectricityBillUrl = dto.ElectricityBillUrl,
+                AppointmentLetterUrl = dto.AppointmentLetterUrl
             };
 
             var userId = await _repo.CreateAsync(user);

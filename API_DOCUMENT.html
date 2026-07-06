@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Nandi — API Reference</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #222; padding: 30px; max-width: 900px; margin: auto; }
+  h1 { font-size: 22px; color: #1a1a2e; border-bottom: 3px solid #1a1a2e; padding-bottom: 8px; margin-bottom: 6px; }
+  .subtitle { color: #555; font-size: 12px; margin-bottom: 20px; }
+  h2 { font-size: 15px; color: #fff; background: #1a1a2e; padding: 7px 12px; margin: 28px 0 10px; border-radius: 4px; }
+  h3 { font-size: 13px; color: #1a1a2e; margin: 16px 0 4px; border-left: 4px solid #4a90d9; padding-left: 8px; }
+  p { font-size: 12px; color: #444; margin-bottom: 6px; }
+  table { width: 100%; border-collapse: collapse; margin: 8px 0 10px; font-size: 12px; }
+  th { background: #f0f4f8; text-align: left; padding: 6px 10px; border: 1px solid #ddd; font-weight: bold; }
+  td { padding: 5px 10px; border: 1px solid #ddd; vertical-align: top; }
+  .method { display: inline-block; padding: 2px 8px; border-radius: 3px; font-weight: bold; font-size: 11px; color: #fff; margin-right: 6px; }
+  .get    { background: #28a745; }
+  .post   { background: #007bff; }
+  .put    { background: #fd7e14; }
+  .delete { background: #dc3545; }
+  pre { background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 5px; font-size: 11px; font-family: Consolas, monospace; overflow-x: auto; margin: 6px 0 14px; line-height: 1.5; }
+  .tag { display: inline-block; background: #e8f0fe; color: #1a73e8; border-radius: 3px; padding: 1px 6px; font-size: 11px; margin-left: 6px; }
+  .note { background: #fff8e1; border-left: 4px solid #ffc107; padding: 6px 10px; font-size: 12px; margin: 6px 0 12px; border-radius: 0 4px 4px 0; }
+  .url { font-family: Consolas, monospace; font-size: 13px; }
+  .footer { margin-top: 40px; border-top: 1px solid #ddd; padding-top: 10px; font-size: 11px; color: #888; text-align: center; }
+  @media print {
+    body { padding: 15px; }
+    pre { page-break-inside: avoid; }
+    h2 { page-break-before: auto; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Nandi — New API Reference</h1>
+<p class="subtitle">Base URL: <code>http://nandi.runasp.net/api</code> &nbsp;|&nbsp; Auth: <code>Authorization: Bearer &lt;token&gt;</code> required on all endpoints &nbsp;|&nbsp; June 2026</p>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>1. Builder — Flat Owner</h2>
+
+<h3><span class="method post">POST</span><span class="url">/api/builder/createflatowner</span> <span class="tag">form-data</span></h3>
+<p>Submit a flat owner creation request with Aadhar card and electricity bill documents. Requires admin approval before activation. Changed from JSON to form-data to support file uploads.</p>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td>PropertyId</td><td>Text</td><td>✅</td><td>Property ID</td></tr>
+  <tr><td>BuildingId</td><td>Text</td><td>✅</td><td>Building ID</td></tr>
+  <tr><td>FlatNo</td><td>Text</td><td>✅</td><td>Flat number e.g. A-101</td></tr>
+  <tr><td>UserId</td><td>Text</td><td>✅</td><td>Existing user's ID</td></tr>
+  <tr><td>RoleId</td><td>Text</td><td>✅</td><td>Flat owner role ID</td></tr>
+  <tr><td>GuestType</td><td>Text</td><td>No</td><td>Guest type (optional)</td></tr>
+  <tr><td>AadharCard</td><td>File</td><td>No</td><td>Aadhar card image/pdf</td></tr>
+  <tr><td>ElectricityBill</td><td>File</td><td>No</td><td>Electricity bill image/pdf</td></tr>
+</table>
+<pre>curl -X POST "http://localhost:5000/api/builder/createflatowner" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "PropertyId=1" \
+  -F "BuildingId=2" \
+  -F "FlatNo=A-101" \
+  -F "UserId=5" \
+  -F "RoleId=3" \
+  -F "AadharCard=@/path/to/aadhar.jpg" \
+  -F "ElectricityBill=@/path/to/bill.jpg"</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>2. Users</h2>
+
+<h3><span class="method get">GET</span><span class="url">/api/user/getallusers</span></h3>
+<p>List all registered users with basic details — name, email, phone, role. Used for selecting SOS contacts.</p>
+<pre>curl -X GET "http://localhost:5000/api/user/getallusers" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>2. Secretary — Society Images</h2>
+
+<h3><span class="method post">POST</span><span class="url">/api/secretory/uploadsocietyimages</span> <span class="tag">form-data</span></h3>
+<p>Secretary uploads one or more society images for a property. Images are stored in AWS S3.</p>
+<table>
+  <tr><th>Field</th><th>Type</th><th>Required</th><th>Description</th></tr>
+  <tr><td>PropertyId</td><td>Text</td><td>✅</td><td>Property ID</td></tr>
+  <tr><td>ImageTitle</td><td>Text</td><td>No</td><td>Caption for the images</td></tr>
+  <tr><td>Images</td><td>File</td><td>✅</td><td>Repeat field for multiple files</td></tr>
+</table>
+<pre>curl -X POST "http://localhost:5000/api/secretory/uploadsocietyimages" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -F "PropertyId=1" \
+  -F "ImageTitle=Society Gate" \
+  -F "Images=@/path/to/image1.jpg" \
+  -F "Images=@/path/to/image2.jpg"</pre>
+
+<h3><span class="method get">GET</span><span class="url">/api/secretory/getsocietyimages</span></h3>
+<p>Get all images uploaded for a property. Visible to all society members.</p>
+<table>
+  <tr><th>Query Param</th><th>Required</th><th>Description</th></tr>
+  <tr><td>propertyId</td><td>✅</td><td>Property ID</td></tr>
+</table>
+<pre>curl -X GET "http://localhost:5000/api/secretory/getsocietyimages?propertyId=1" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>3. SOS — Emergency Contacts</h2>
+
+<div class="note">All SOS endpoints read the logged-in user's ID from the JWT token automatically. No need to pass userId in the request body.</div>
+
+<h3><span class="method post">POST</span><span class="url">/api/user/addSOScontact</span></h3>
+<p>Add a user as an SOS emergency contact with an optional relation label (e.g. Father, Friend, Neighbor).</p>
+<table>
+  <tr><th>Field</th><th>Required</th><th>Description</th></tr>
+  <tr><td>contactUserId</td><td>✅</td><td>User ID to add as SOS contact</td></tr>
+  <tr><td>relation</td><td>No</td><td>Relation label e.g. Father, Friend</td></tr>
+</table>
+<pre>curl -X POST "http://localhost:5000/api/user/addSOScontact" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "contactUserId": 5, "relation": "Father" }'</pre>
+
+<h3><span class="method get">GET</span><span class="url">/api/user/getsoscontacts</span></h3>
+<p>Get all saved SOS contacts of the logged-in user with name, phone, email and relation.</p>
+<pre>curl -X GET "http://localhost:5000/api/user/getsoscontacts" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+
+<h3><span class="method put">PUT</span><span class="url">/api/user/updateSOScontact/{id}</span></h3>
+<p>Update the relation label of an existing SOS contact. Use the <code>id</code> returned from <code>getsoscontacts</code>.</p>
+<table>
+  <tr><th>Field</th><th>Required</th><th>Description</th></tr>
+  <tr><td>relation</td><td>✅</td><td>New relation label e.g. Brother</td></tr>
+</table>
+<pre>curl -X PUT "http://localhost:5000/api/user/updateSOScontact/3" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -d '{ "relation": "Brother" }'</pre>
+
+<h3><span class="method delete">DELETE</span><span class="url">/api/user/removeSOScontact/{id}</span></h3>
+<p>Remove a user from SOS contacts. Use the <code>id</code> returned from <code>getsoscontacts</code>.</p>
+<pre>curl -X DELETE "http://localhost:5000/api/user/removeSOScontact/3" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+
+<h3><span class="method post">POST</span><span class="url">/api/user/triggersos</span></h3>
+<p>🚨 Instantly sends an emergency push notification to all saved SOS contacts of the logged-in user.</p>
+<div class="note"><strong>Push received by contacts —</strong> Title: 🚨 SOS Alert &nbsp;|&nbsp; Body: A contact needs your help urgently!</div>
+<pre>curl -X POST "http://localhost:5000/api/user/triggersos" \
+  -H "Authorization: Bearer YOUR_TOKEN"</pre>
+
+<!-- ═══════════════════════════════════════════ -->
+<h2>Quick Reference</h2>
+
+<table>
+  <tr><th>Method</th><th>Endpoint</th><th>Purpose</th></tr>
+  <tr><td><span class="method post">POST</span></td><td><code>/api/builder/createflatowner</code></td><td>Create flat owner request with Aadhar + electricity bill (form-data)</td></tr>
+  <tr><td><span class="method get">GET</span></td><td><code>/api/user/getallusers</code></td><td>List all users (for SOS contact picker)</td></tr>
+  <tr><td><span class="method post">POST</span></td><td><code>/api/secretory/uploadsocietyimages</code></td><td>Upload society images (multi-file)</td></tr>
+  <tr><td><span class="method get">GET</span></td><td><code>/api/secretory/getsocietyimages?propertyId=</code></td><td>Get society images by property</td></tr>
+  <tr><td><span class="method post">POST</span></td><td><code>/api/user/addSOScontact</code></td><td>Add SOS emergency contact</td></tr>
+  <tr><td><span class="method get">GET</span></td><td><code>/api/user/getsoscontacts</code></td><td>Get my SOS contacts</td></tr>
+  <tr><td><span class="method put">PUT</span></td><td><code>/api/user/updateSOScontact/{id}</code></td><td>Update contact relation label</td></tr>
+  <tr><td><span class="method delete">DELETE</span></td><td><code>/api/user/removeSOScontact/{id}</code></td><td>Remove a SOS contact</td></tr>
+  <tr><td><span class="method post">POST</span></td><td><code>/api/user/triggersos</code></td><td>🚨 Send SOS push to all contacts</td></tr>
+</table>
+
+<div class="footer">Nandi API Reference &nbsp;|&nbsp; June 2026 &nbsp;|&nbsp; To save as PDF: open in browser → Ctrl+P → Save as PDF</div>
+
+</body>
+</html>

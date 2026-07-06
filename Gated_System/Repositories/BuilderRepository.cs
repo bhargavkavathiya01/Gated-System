@@ -71,7 +71,9 @@ namespace Gated_System.Repositories
                 propertyid = model.PropertyId,
                 userid = model.UserId,
                 roleid = model.RoleId,
-                createdby = model.CreatedBy
+                createdby = model.CreatedBy,
+                aadharcard = model.AadharCardUrl,
+                appointmentletter = model.AppointmentLetterUrl
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);
@@ -280,6 +282,19 @@ namespace Gated_System.Repositories
 
         private static PropertyViewModel ParsePropertyElement(JsonElement el)
         {
+            var buildings = new List<BuildingViewModel>();
+            if (el.TryGetProperty("buildings", out var bArr) && bArr.ValueKind == JsonValueKind.Array)
+            {
+                foreach (var b in bArr.EnumerateArray())
+                {
+                    buildings.Add(new BuildingViewModel
+                    {
+                        BuildingId = b.TryGetProperty("id", out var bid) && bid.TryGetInt32(out var bIdVal) ? bIdVal : 0,
+                        BuildingName = b.TryGetProperty("buildingname", out var bn) ? bn.GetString() ?? "" : ""
+                    });
+                }
+            }
+
             return new PropertyViewModel
             {
                 Id = el.TryGetProperty("id", out var idEl) && idEl.TryGetInt32(out var idVal) ? idVal : 0,
@@ -288,7 +303,8 @@ namespace Gated_System.Repositories
                 City = el.TryGetProperty("city", out var cityEl) ? cityEl.GetString() ?? "" : "",
                 Pincode = el.TryGetProperty("pincode", out var pinEl) ? pinEl.GetString() ?? "" : "",
                 BuilderId = el.TryGetProperty("builderid", out var bEl) && bEl.TryGetInt32(out var bVal) ? bVal : 0,
-                IsVerified = el.TryGetProperty("isverified", out var ivEl) ? ivEl.GetString() ?? "" : ""
+                IsVerified = el.TryGetProperty("isverified", out var ivEl) ? ivEl.GetString() ?? "" : "",
+                Buildings = buildings.Count > 0 ? buildings : null
             };
         }
 

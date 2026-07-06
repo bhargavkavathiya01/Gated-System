@@ -49,6 +49,11 @@ namespace Gated_System.Controllers
                     var res = await _aws.UploadFileAsync(dto.ElectricityBill, "ElectricityBills");
                     if (res.status) dto.ElectricityBillUrl = res.Data;
                 }
+                if (dto.AppointmentLetter != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.AppointmentLetter, "AppointmentLetters");
+                    if (res.status) dto.AppointmentLetterUrl = res.Data;
+                }
 
                 var res2 = await _auth.RegisterAsync(dto);
                 return Ok(new

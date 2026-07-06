@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Mvc.ModelBinding;
+
 namespace Gated_System.Models
 {
     public class UserModel
@@ -16,6 +18,7 @@ namespace Gated_System.Models
         public IFormFile? ProfileImage { get; set; }
         public string? AadharCardUrl { get; set; }
         public string? ElectricityBillUrl { get; set; }
+        public string? AppointmentLetterUrl { get; set; }
     }
 
     public class UserProfileUpdateModel
@@ -67,6 +70,7 @@ namespace Gated_System.Models
         public string? ProfilePictureUrl { get; set; } = "";
         public string? AadharCard { get; set; }
         public string? ElectricityBill { get; set; }
+        public string? AppointmentLetter { get; set; }
     }
 
     public class RegisterModel
@@ -80,8 +84,10 @@ namespace Gated_System.Models
         public int RegisterTypeId { get; set; }
         public IFormFile? AadharCard { get; set; }
         public IFormFile? ElectricityBill { get; set; }
-        public string? AadharCardUrl { get; set; }
-        public string? ElectricityBillUrl { get; set; }
+        public IFormFile? AppointmentLetter { get; set; }
+        [BindNever] public string? AadharCardUrl { get; set; }
+        [BindNever] public string? ElectricityBillUrl { get; set; }
+        [BindNever] public string? AppointmentLetterUrl { get; set; }
     }
 
     public class LoginModel

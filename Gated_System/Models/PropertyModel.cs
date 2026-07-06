@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.Text.Json.Serialization;
 
 
@@ -31,17 +32,23 @@ namespace Gated_System.Models
         public IFormFile? PanCard { get; set; }
         public IFormFile? TanCard { get; set; }
 
-        public string? RegistrationCertificateUrl { get; set; }
-        public string? PanCardUrl { get; set; }
-        public string? TanCardUrl { get; set; }
+        [BindNever] public string? RegistrationCertificateUrl { get; set; }
+        [BindNever] public string? PanCardUrl { get; set; }
+        [BindNever] public string? TanCardUrl { get; set; }
     }
 
     public class CreateSecretaryModel
     {
         public int PropertyId { get; set; }
-        public int UserId { get; set; }  
+        public int UserId { get; set; }
         public int RoleId { get; set; }
         public int CreatedBy { get; set; } //Builder Id
+
+        // Documents
+        public IFormFile? AadharCard { get; set; }
+        public IFormFile? AppointmentLetter { get; set; }
+        [BindNever] public string? AadharCardUrl { get; set; }
+        [BindNever] public string? AppointmentLetterUrl { get; set; }
     }
 
     public class CreateCommitteeModel
@@ -65,8 +72,8 @@ namespace Gated_System.Models
         // Documents
         public IFormFile? AadharCard { get; set; }
         public IFormFile? ElectricityBill { get; set; }
-        public string? AadharCardUrl { get; set; }
-        public string? ElectricityBillUrl { get; set; }
+        [BindNever] public string? AadharCardUrl { get; set; }
+        [BindNever] public string? ElectricityBillUrl { get; set; }
 
         // User Registration Fields
         public string? Firstname { get; set; }
@@ -88,6 +95,7 @@ namespace Gated_System.Models
         public string Pincode { get; set; } = "";
         public int BuilderId { get; set; }
         public string IsVerified { get; set; } = "";
+        public List<BuildingViewModel>? Buildings { get; set; }
     }
 
     public class AdminPropertyViewModel
@@ -110,7 +118,7 @@ namespace Gated_System.Models
         public string? PanCardUrl { get; set; }
         [JsonPropertyName("tancard")]
         public string? TanCardUrl { get; set; }
-        //public List<BuildingViewModel>? Buildings { get; set; }
+        public List<BuildingViewModel>? Buildings { get; set; }
     }
 
     public class BuildingViewModel

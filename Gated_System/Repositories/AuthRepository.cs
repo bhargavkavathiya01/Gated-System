@@ -29,7 +29,8 @@ namespace Gated_System.Repositories
                 createdby = user.CreatedBy,
                 registertypeid = user.RegisterTypeId,
                 aadharcard = user.AadharCardUrl,
-                electricitybill = user.ElectricityBillUrl
+                electricitybill = user.ElectricityBillUrl,
+                appointmentletter = user.AppointmentLetterUrl
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);
@@ -221,7 +222,8 @@ namespace Gated_System.Repositories
                 ? ""
                 : data.GetProperty("phone").GetString() ?? "",
                     AadharCard = data.TryGetProperty("aadharCard", out var adk) && adk.ValueKind != JsonValueKind.Null ? adk.GetString() : null,
-                    ElectricityBill = data.TryGetProperty("electricityBill", out var ebk) && ebk.ValueKind != JsonValueKind.Null ? ebk.GetString() : null
+                    ElectricityBill = data.TryGetProperty("electricityBill", out var ebk) && ebk.ValueKind != JsonValueKind.Null ? ebk.GetString() : null,
+                    AppointmentLetter = data.TryGetProperty("appointmentLetter", out var apk) && apk.ValueKind != JsonValueKind.Null ? apk.GetString() : null
                 };
 
                 return ServiceResult<UserResponseModel>.Success(userData);

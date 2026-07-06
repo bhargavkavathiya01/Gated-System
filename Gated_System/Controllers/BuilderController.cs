@@ -48,7 +48,7 @@ namespace Gated_System.Controllers
         }
 
         [HttpPost("createsecretaryorsecurity")]
-        public async Task<IActionResult> CreateSecretary([FromBody] CreateSecretaryModel dto)
+        public async Task<IActionResult> CreateSecretary([FromForm] CreateSecretaryModel dto)
         {
             try
             {
@@ -56,6 +56,17 @@ namespace Gated_System.Controllers
                 if (userId == -1)
                     return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
                 dto.CreatedBy = userId;
+
+                if (dto.AadharCard != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.AadharCard, "AadharCards");
+                    if (res.status) dto.AadharCardUrl = res.Data;
+                }
+                if (dto.AppointmentLetter != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.AppointmentLetter, "AppointmentLetters");
+                    if (res.status) dto.AppointmentLetterUrl = res.Data;
+                }
 
                 var resultId = await _service.CreateSecretaryAsync(dto);
                 return Ok(new
@@ -76,7 +87,6 @@ namespace Gated_System.Controllers
             }
             catch (Exception ex)
             {
-                // consider logging ex
                 return StatusCode(500, new { message = "An error occurred", details = ex.Message });
             }
         }
