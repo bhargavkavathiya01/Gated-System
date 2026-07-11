@@ -455,7 +455,8 @@ namespace Gated_System.Repositories
                 guesttype = model.GuestType,
                 requestedby = model.RequestedBy,
                 aadharcard = model.AadharCardUrl,
-                electricitybill = model.ElectricityBillUrl
+                electricitybill = model.ElectricityBillUrl,
+                appointmentletter = model.AppointmentLetterUrl
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);
@@ -553,7 +554,8 @@ namespace Gated_System.Repositories
                         RejectionReason = item.TryGetProperty("rejectionreason", out var rr) && rr.ValueKind != JsonValueKind.Null ? rr.GetString() : null,
                         CreatedOn = item.TryGetProperty("createdon", out var co) && co.TryGetDateTime(out var createdOn) ? createdOn : DateTime.UtcNow,
                         AadharCard = item.TryGetProperty("aadharcard", out var ac) && ac.ValueKind != JsonValueKind.Null ? ac.GetString() : null,
-                        ElectricityBill = item.TryGetProperty("electricitybill", out var eb) && eb.ValueKind != JsonValueKind.Null ? eb.GetString() : null
+                        ElectricityBill = item.TryGetProperty("electricitybill", out var eb) && eb.ValueKind != JsonValueKind.Null ? eb.GetString() : null,
+                        AppointmentLetter = item.TryGetProperty("appointmentletter", out var al) && al.ValueKind != JsonValueKind.Null ? al.GetString() : null
                     });
                 }
 
@@ -667,7 +669,10 @@ namespace Gated_System.Repositories
                     ApprovedByName = item.TryGetProperty("approvedbyname", out var abn) ? abn.GetString() ?? "" : "",
                     ApprovedOn = item.TryGetProperty("approvedon", out var ao) && ao.ValueKind != JsonValueKind.Null && ao.TryGetDateTime(out var dt) ? dt : null,
                     RejectionReason = item.TryGetProperty("rejectionreason", out var rr) && rr.ValueKind != JsonValueKind.Null ? rr.GetString() : null,
-                    CreatedOn = item.TryGetProperty("createdon", out var co) && co.TryGetDateTime(out var createdOn) ? createdOn : DateTime.UtcNow
+                    CreatedOn = item.TryGetProperty("createdon", out var co) && co.TryGetDateTime(out var createdOn) ? createdOn : DateTime.UtcNow,
+                    AadharCard = item.TryGetProperty("aadharcard", out var ac) && ac.ValueKind != JsonValueKind.Null ? ac.GetString() : null,
+                    ElectricityBill = item.TryGetProperty("electricitybill", out var eb) && eb.ValueKind != JsonValueKind.Null ? eb.GetString() : null,
+                    AppointmentLetter = item.TryGetProperty("appointmentletter", out var al) && al.ValueKind != JsonValueKind.Null ? al.GetString() : null
                 };
             }
             finally

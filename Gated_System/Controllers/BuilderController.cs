@@ -110,6 +110,11 @@ namespace Gated_System.Controllers
                     var res = await _aws.UploadFileAsync(dto.ElectricityBill, "ElectricityBills");
                     if (res.status) dto.ElectricityBillUrl = res.Data;
                 }
+                if (dto.AppointmentLetter != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.AppointmentLetter, "AppointmentLetters");
+                    if (res.status) dto.AppointmentLetterUrl = res.Data;
+                }
 
                 // Convert to request model
                 var requestModel = new CreateFlatOwnerRequestModel
@@ -122,7 +127,8 @@ namespace Gated_System.Controllers
                     GuestType = dto.GuestType,
                     RequestedBy = userId,
                     AadharCardUrl = dto.AadharCardUrl,
-                    ElectricityBillUrl = dto.ElectricityBillUrl
+                    ElectricityBillUrl = dto.ElectricityBillUrl,
+                    AppointmentLetterUrl = dto.AppointmentLetterUrl
                 };
 
                 var resultId = await _service.CreateFlatOwnerRequestAsync(requestModel);

@@ -67,6 +67,10 @@ namespace Gated_System.Controllers
             {
                 return BadRequest(ApiResponse.Fail(ex.Message));
             }
+            catch (Exception)
+            {
+                return StatusCode(500, ApiResponse.Fail("An error occurred during registration."));
+            }
         }
 
 

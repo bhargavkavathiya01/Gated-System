@@ -57,8 +57,14 @@ namespace Gated_System.Repositories
                 var message = root.TryGetProperty("message", out var m) ? m.GetString() : null;
 
                 if (status == 409)
-                {
                     throw new ApplicationException(message);
+
+                if (status != 201)
+                {
+                    var error = root.TryGetProperty("error", out var errProp) ? errProp.GetString() : null;
+                    if (error != null && error.Contains("foreign key", StringComparison.OrdinalIgnoreCase))
+                        throw new ApplicationException("Invalid RegisterTypeId. Valid values: 1 (Management), 2 (Flat Owner), 3 (Security).");
+                    throw new ApplicationException(message ?? "Registration failed.");
                 }
 
                 var id = root

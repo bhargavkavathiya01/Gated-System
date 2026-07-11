@@ -72,8 +72,10 @@ namespace Gated_System.Models
         // Documents
         public IFormFile? AadharCard { get; set; }
         public IFormFile? ElectricityBill { get; set; }
+        public IFormFile? AppointmentLetter { get; set; }
         [BindNever] public string? AadharCardUrl { get; set; }
         [BindNever] public string? ElectricityBillUrl { get; set; }
+        [BindNever] public string? AppointmentLetterUrl { get; set; }
 
         // User Registration Fields
         public string? Firstname { get; set; }
@@ -192,6 +194,7 @@ namespace Gated_System.Models
         public int RequestedBy { get; set; } // Builder Id
         public string? AadharCardUrl { get; set; }
         public string? ElectricityBillUrl { get; set; }
+        public string? AppointmentLetterUrl { get; set; }
     }
 
     public class FlatOwnerRequestResponseModel
@@ -220,6 +223,7 @@ namespace Gated_System.Models
         public DateTime CreatedOn { get; set; }
         public string? AadharCard { get; set; }
         public string? ElectricityBill { get; set; }
+        public string? AppointmentLetter { get; set; }
     }
 
     public class ApproveFlatOwnerRequestModel
@@ -244,5 +248,8 @@ namespace Gated_System.Models
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
+        public int? BuildingId { get; set; }
+        public string? BuildingName { get; set; }
+        public string? FlatNumber { get; set; }
     }
 }
