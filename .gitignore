@@ -7,6 +7,7 @@
 # Secrets - never commit
 **/appsettings.json
 **/appsettings.Development.json
+**/firebase-service-account.json
 
 # Build outputs
 **/bin/

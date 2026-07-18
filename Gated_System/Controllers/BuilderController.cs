@@ -227,6 +227,74 @@ namespace Gated_System.Controllers
             return Ok(ApiResponse.Success("User fetched successfully", result));
         }
 
+        [HttpGet("securityrequests")]
+        public async Task<IActionResult> GetSecurityRequests([FromQuery] string? status = null)
+        {
+            try
+            {
+                var requests = await _service.GetAllSecurityRequestsAsync(status);
+                return Ok(new
+                {
+                    status = true,
+                    message = "Security requests fetched successfully",
+                    data = requests
+                });
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(new { status = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+            }
+        }
+
+        [HttpGet("securityrequests/{id}")]
+        public async Task<IActionResult> GetSecurityRequestById(int id)
+        {
+            try
+            {
+                var request = await _service.GetSecurityRequestByIdAsync(id);
+                if (request == null)
+                    return NotFound(new { status = false, message = "Security request not found" });
+
+                return Ok(new { status = true, message = "Security request fetched successfully", data = request });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+            }
+        }
+
+        [HttpPost("approvesecurityrequest")]
+        public async Task<IActionResult> ApproveSecurityRequest([FromBody] ApproveSecurityRequestModel dto)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == -1)
+                    return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+                await _service.ApproveSecurityRequestAsync(dto, userId);
+                return Ok(new
+                {
+                    status = true,
+                    message = dto.Action == "Approved"
+                        ? "Security request approved successfully."
+                        : "Security request rejected."
+                });
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(new { status = false, message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new { message = "An error occurred", details = ex.Message });
+            }
+        }
+
         [HttpGet("memberdetails/{propertyId}")]
         public async Task<IActionResult> GetMemberDetails(int propertyId)
         {

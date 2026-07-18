@@ -1,4 +1,5 @@
-﻿using Gated_System.Models;
+﻿using FirebaseAdmin.Messaging;
+using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -188,6 +189,31 @@ namespace Gated_System.Controllers
             var result = await _userService.TriggerSosAsync(userId);
             if (!result.status) return BadRequest(new { status = false, message = result.Message });
             return Ok(new { status = true, message = result.Message });
+        }
+
+        [HttpPost("test-push-notification")]
+        public async Task<IActionResult> TestPushNotification([FromBody] TestPushNotificationModel dto)
+        {
+            try
+            {
+                var message = new Message
+                {
+                    Token = dto.DeviceToken,
+                    Notification = new Notification
+                    {
+                        Title = dto.Title ?? "Test Notification",
+                        Body  = dto.Body  ?? "Dummy push notification from Gated System"
+                    },
+                    Data = new Dictionary<string, string> { ["type"] = "test" }
+                };
+
+                var result = await FirebaseMessaging.DefaultInstance.SendAsync(message);
+                return Ok(new { status = true, message = "Notification sent successfully", messageId = result });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { status = false, message = ex.Message });
+            }
         }
     }
 }

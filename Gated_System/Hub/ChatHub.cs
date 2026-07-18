@@ -102,7 +102,6 @@ public class ChatHub : Hub
 
             var saved = await _chatService.AddMessageAsync(request.ChatId, userId, request.Message);
 
-            // Send response in same format as API
             await Clients.Group(GroupName(request.ChatId)).SendAsync("ReceiveMessage", new
             {
                 status = true,

@@ -88,6 +88,14 @@ namespace Gated_System.Models
         [BindNever] public string? AadharCardUrl { get; set; }
         [BindNever] public string? ElectricityBillUrl { get; set; }
         [BindNever] public string? AppointmentLetterUrl { get; set; }
+        [BindNever] public int UserId { get; set; }
+    }
+
+    public class TestPushNotificationModel
+    {
+        public string DeviceToken { get; set; } = "";
+        public string? Title { get; set; }
+        public string? Body { get; set; }
     }
 
     public class LoginModel
@@ -147,6 +155,7 @@ namespace Gated_System.Models
         public int UserId { get; set; }
         public string FcmToken { get; set; } = string.Empty;
         public int ModifiedBy { get; set; }
+        public string Platform { get; set; } = "android";
     }
 
     public class ForgotPasswordRequest

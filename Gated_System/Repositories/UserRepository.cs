@@ -98,6 +98,10 @@ namespace Gated_System.Repositories
         public async Task<bool> UpdateFcmTokenAsync(UpdateFcmTokenModel model)
         {
             const string query = @"SELECT public.sp_api_usermaster(@p_operation, @p_json)::text;";
+            const string insertTokenQuery = @"
+                INSERT INTO public.tbluserdevicetokens (userid, devicetoken, platform, createdon)
+                VALUES (@UserId, @DeviceToken, @Platform, CURRENT_TIMESTAMP)
+                ON CONFLICT (userid, devicetoken) DO NOTHING;";
 
             var payload = new
             {
@@ -124,13 +128,22 @@ namespace Gated_System.Repositories
                 int statusCode = root.GetProperty("status_code").GetInt32();
                 string message = root.GetProperty("message").GetString() ?? "";
 
-                // Handle specific business logic errors from SP
-                if (statusCode == 409) // Conflict
-                {
+                if (statusCode == 409)
                     throw new ApplicationException(message);
+
+                if (statusCode != 200) return false;
+
+                // Also insert into tbluserdevicetokens so all push notification flows work
+                if (!string.IsNullOrWhiteSpace(model.FcmToken))
+                {
+                    using var insertCmd = new NpgsqlCommand(insertTokenQuery, _connection);
+                    insertCmd.Parameters.AddWithValue("UserId", model.UserId);
+                    insertCmd.Parameters.AddWithValue("DeviceToken", model.FcmToken);
+                    insertCmd.Parameters.AddWithValue("Platform", string.IsNullOrWhiteSpace(model.Platform) ? "android" : model.Platform);
+                    await insertCmd.ExecuteNonQueryAsync();
                 }
 
-                return statusCode == 200;
+                return true;
             }
             finally
             {

@@ -612,6 +612,195 @@ namespace Gated_System.Repositories
             }
         }
 
+        public async Task<int> CreateSecurityRequestAsync(CreateSecurityRequestModel model)
+        {
+            const string query = @"SELECT public.sp_api_securityrequest(@p_operation, @p_json)::text;";
+
+            var payload = new
+            {
+                propertyid        = model.PropertyId,
+                userid            = model.UserId,
+                roleid            = model.RoleId,
+                requestedby       = model.RequestedBy,
+                aadharcard        = model.AadharCardUrl,
+                appointmentletter = model.AppointmentLetterUrl
+            };
+
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 2);
+                cmd.Parameters.Add("p_json", NpgsqlDbType.Jsonb).Value = jsonPayload;
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+                if (scalarResult is null || scalarResult is DBNull)
+                    throw new Exception("sp_api_securityrequest returned null/empty result.");
+
+                using var doc = JsonDocument.Parse(scalarResult.ToString()!);
+                var root = doc.RootElement;
+                var statusCode = root.GetProperty("status_code").GetInt32();
+                var message    = root.GetProperty("message").GetString();
+
+                if (statusCode != 201)
+                    throw new ApplicationException(message ?? "Failed to create security request.");
+
+                if (!root.TryGetProperty("data", out var dataEl) || !dataEl.TryGetProperty("id", out var idEl))
+                    throw new Exception("Unexpected response from sp_api_securityrequest: missing data.id");
+
+                return idEl.GetInt32();
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task<IEnumerable<SecurityRequestResponseModel>> GetAllSecurityRequestsAsync(string? status = null)
+        {
+            const string query = @"SELECT public.sp_api_getsecurityrequests(@p_status)::text;";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_status", status ?? (object)DBNull.Value);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+                if (scalarResult is null || scalarResult is DBNull)
+                    return Enumerable.Empty<SecurityRequestResponseModel>();
+
+                using var doc = JsonDocument.Parse(scalarResult.ToString()!);
+                var root       = doc.RootElement;
+                var statusCode = root.GetProperty("status_code").GetInt32();
+
+                if (statusCode != 200)
+                {
+                    var msg = root.TryGetProperty("message", out var m) ? m.GetString() : "Unknown error";
+                    throw new ApplicationException($"Error fetching security requests: {msg}");
+                }
+
+                if (!root.TryGetProperty("data", out var dataEl) || dataEl.ValueKind != JsonValueKind.Array)
+                    return Enumerable.Empty<SecurityRequestResponseModel>();
+
+                var list = new List<SecurityRequestResponseModel>();
+                foreach (var item in dataEl.EnumerateArray())
+                    list.Add(ParseSecurityRequestItem(item));
+
+                return list;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task<SecurityRequestResponseModel?> GetSecurityRequestByIdAsync(int requestId)
+        {
+            const string query = @"SELECT public.sp_api_getsecurityrequestbyid(@p_requestid)::text;";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_requestid", requestId);
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+                if (scalarResult is null || scalarResult is DBNull) return null;
+
+                using var doc  = JsonDocument.Parse(scalarResult.ToString()!);
+                var root       = doc.RootElement;
+                var statusCode = root.GetProperty("status_code").GetInt32();
+
+                if (statusCode == 404) return null;
+
+                if (statusCode != 200)
+                {
+                    var msg = root.TryGetProperty("message", out var m) ? m.GetString() : "Unknown error";
+                    throw new ApplicationException($"Error fetching security request: {msg}");
+                }
+
+                if (!root.TryGetProperty("data", out var dataEl) || dataEl.ValueKind != JsonValueKind.Object)
+                    return null;
+
+                return ParseSecurityRequestItem(dataEl);
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task<bool> UpdateSecurityRequestStatusAsync(int requestId, string status, int approvedBy, string? rejectionReason)
+        {
+            const string query = @"SELECT public.sp_api_securityrequest(@p_operation, @p_json)::text;";
+
+            var payload = new
+            {
+                requestid       = requestId,
+                status          = status,
+                approvedby      = approvedBy,
+                rejectionreason = rejectionReason
+            };
+
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 3);
+                cmd.Parameters.Add("p_json", NpgsqlDbType.Jsonb).Value = jsonPayload;
+
+                var scalarResult = await cmd.ExecuteScalarAsync();
+                if (scalarResult is null || scalarResult is DBNull)
+                    throw new Exception("sp_api_securityrequest returned null/empty result.");
+
+                using var doc  = JsonDocument.Parse(scalarResult.ToString()!);
+                var root       = doc.RootElement;
+                var statusCode = root.GetProperty("status_code").GetInt32();
+                var message    = root.GetProperty("message").GetString();
+
+                if (statusCode != 200)
+                    throw new ApplicationException(message ?? "Failed to update security request.");
+
+                return true;
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        private static SecurityRequestResponseModel ParseSecurityRequestItem(JsonElement item)
+        {
+            return new SecurityRequestResponseModel
+            {
+                Id              = item.GetProperty("id").GetInt32(),
+                PropertyId      = item.GetProperty("propertyid").GetInt32(),
+                PropertyName    = item.TryGetProperty("propertyname",    out var pn)  ? pn.GetString()  ?? "" : "",
+                UserId          = item.GetProperty("userid").GetInt32(),
+                UserFirstName   = item.TryGetProperty("userfirstname",   out var ufn) ? ufn.GetString() ?? "" : "",
+                UserLastName    = item.TryGetProperty("userlastname",    out var uln) ? uln.GetString() ?? "" : "",
+                UserEmail       = item.TryGetProperty("useremail",       out var ue)  ? ue.GetString()  ?? "" : "",
+                UserPhone       = item.TryGetProperty("userphone",       out var up)  ? up.GetString()  ?? "" : "",
+                RoleId          = item.GetProperty("roleid").GetInt32(),
+                RoleName        = item.TryGetProperty("rolename",        out var rn)  ? rn.GetString()  ?? "" : "",
+                RequestedBy     = item.GetProperty("requestedby").GetInt32(),
+                RequestedByName = item.TryGetProperty("requestedbyname", out var rbn) ? rbn.GetString() ?? "" : "",
+                Status          = item.TryGetProperty("status",          out var s)   ? s.GetString()   ?? "" : "",
+                ApprovedBy      = item.TryGetProperty("approvedby",      out var ab)  && ab.ValueKind != JsonValueKind.Null ? ab.GetInt32() : null,
+                ApprovedByName  = item.TryGetProperty("approvedbyname",  out var abn) ? abn.GetString() : null,
+                ApprovedOn      = item.TryGetProperty("approvedon",      out var ao)  && ao.ValueKind != JsonValueKind.Null && ao.TryGetDateTime(out var dt) ? dt : null,
+                RejectionReason = item.TryGetProperty("rejectionreason", out var rr)  && rr.ValueKind != JsonValueKind.Null ? rr.GetString() : null,
+                CreatedOn       = item.TryGetProperty("createdon",       out var co)  && co.TryGetDateTime(out var createdOn) ? createdOn : DateTime.UtcNow,
+                AadharCard      = item.TryGetProperty("aadharcard",      out var ac)  && ac.ValueKind != JsonValueKind.Null ? ac.GetString() : null,
+                AppointmentLetter = item.TryGetProperty("appointmentletter", out var al) && al.ValueKind != JsonValueKind.Null ? al.GetString() : null
+            };
+        }
+
         public async Task<FlatOwnerRequestResponseModel?> GetFlatOwnerRequestByIdAsync(int requestId)
         {
             const string query = @"SELECT public.sp_api_getflatownerrequestbyid(@p_requestid)::text;";

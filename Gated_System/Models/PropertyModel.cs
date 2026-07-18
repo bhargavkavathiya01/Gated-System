@@ -233,6 +233,49 @@ namespace Gated_System.Models
         public string? RejectionReason { get; set; }
     }
 
+    public class CreateSecurityRequestModel
+    {
+        public int PropertyId { get; set; }
+        public int RoleId { get; set; }
+        public IFormFile? AadharCard { get; set; }
+        public IFormFile? AppointmentLetter { get; set; }
+        [BindNever] public string? AadharCardUrl { get; set; }
+        [BindNever] public string? AppointmentLetterUrl { get; set; }
+        public int UserId { get; set; }
+        [BindNever] public int RequestedBy { get; set; }
+    }
+
+    public class SecurityRequestResponseModel
+    {
+        public int Id { get; set; }
+        public int PropertyId { get; set; }
+        public string PropertyName { get; set; } = "";
+        public int UserId { get; set; }
+        public string UserFirstName { get; set; } = "";
+        public string UserLastName { get; set; } = "";
+        public string UserEmail { get; set; } = "";
+        public string UserPhone { get; set; } = "";
+        public int RoleId { get; set; }
+        public string RoleName { get; set; } = "";
+        public int RequestedBy { get; set; }
+        public string RequestedByName { get; set; } = "";
+        public string Status { get; set; } = "";
+        public int? ApprovedBy { get; set; }
+        public string? ApprovedByName { get; set; }
+        public DateTime? ApprovedOn { get; set; }
+        public string? RejectionReason { get; set; }
+        public DateTime CreatedOn { get; set; }
+        public string? AadharCard { get; set; }
+        public string? AppointmentLetter { get; set; }
+    }
+
+    public class ApproveSecurityRequestModel
+    {
+        public int RequestId { get; set; }
+        public string Action { get; set; } = "Approved"; // "Approved" or "Rejected"
+        public string? RejectionReason { get; set; }
+    }
+
     public class PropertyMembersModel
     {
         public int UserId { get; set; }

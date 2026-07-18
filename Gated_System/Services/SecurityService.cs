@@ -177,8 +177,8 @@ namespace Gated_System.Services
                 {
                     await _pushHelper.SendToDeviceAsync(
                         deviceToken,
+                        $"{req.VisitorName} is waiting for your approval.",
                         "Visitor Approval Request",
-                        $"Visitor {req.VisitorName} is waiting for your approval.",
                         new Dictionary<string, string>
                         {
                             { "visitorRequestId", insertedId.ToString() },

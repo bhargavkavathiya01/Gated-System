@@ -756,13 +756,13 @@ namespace Gated_System.Repositories
             if (userIds == null || userIds.Count == 0)
                 return new List<string>();
 
-            // Note: If your FCM token column has a different name, update 'fcmtoken' here
             const string query = @"
-                SELECT DISTINCT fcmtoken 
-                FROM usermaster 
-                WHERE userid = ANY(:userIds) 
-                AND fcmtoken IS NOT NULL 
-                AND fcmtoken != '';";
+                SELECT DISTINCT devicetoken
+                FROM tbluserdevicetokens
+                WHERE userid = ANY(:userIds)
+                AND devicetoken IS NOT NULL
+                AND devicetoken != ''
+                AND devicetoken != 'string';";
 
             var tokens = new List<string>();
 

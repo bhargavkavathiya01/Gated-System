@@ -65,9 +65,10 @@ namespace Gated_System.Services
             //};
             return new RegisterModel
             {
+                UserId = userId,
                 Firstname = dto.Firstname,
-                Middlename=dto.Middlename,
-                Lastname=dto.Lastname,
+                Middlename = dto.Middlename,
+                Lastname = dto.Lastname,
                 Email = dto.Email,
                 Phone = dto.Phone,
                 RegisterTypeId = dto.RegisterTypeId

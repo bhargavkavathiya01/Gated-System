@@ -11,7 +11,15 @@ namespace Gated_System.Controllers
     public class SecurityController : ControllerBase
     {
         private readonly ISecurityService _service;
-        public SecurityController(ISecurityService service) => _service = service;
+        private readonly IBuilderService _builderService;
+        private readonly IAwsS3Service _aws;
+
+        public SecurityController(ISecurityService service, IBuilderService builderService, IAwsS3Service aws)
+        {
+            _service        = service;
+            _builderService = builderService;
+            _aws            = aws;
+        }
 
         private int GetCurrentUserId()
         {
@@ -123,5 +131,40 @@ namespace Gated_System.Controllers
         //        return StatusCode(500, new { message = "An error occurred", details = ex.Message });
         //    }
         //}
+
+        // ── New: Security person submits a property assignment request ──
+        [HttpPost("requestproperty")]
+        public async Task<IActionResult> RequestProperty([FromForm] CreateSecurityRequestModel dto)
+        {
+            try
+            {
+                if (dto.UserId <= 0)
+                    return BadRequest(ApiResponse.Fail("UserId is required."));
+
+                dto.RequestedBy = dto.UserId;
+
+                if (dto.AadharCard != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.AadharCard, "AadharCards");
+                    if (res.status) dto.AadharCardUrl = res.Data;
+                }
+                if (dto.AppointmentLetter != null)
+                {
+                    var res = await _aws.UploadFileAsync(dto.AppointmentLetter, "AppointmentLetters");
+                    if (res.status) dto.AppointmentLetterUrl = res.Data;
+                }
+
+                var id = await _builderService.CreateSecurityRequestAsync(dto);
+                return Ok(ApiResponse.Success("Security request submitted successfully. Waiting for admin approval.", new { id }));
+            }
+            catch (ApplicationException ex)
+            {
+                return BadRequest(ApiResponse.Fail(ex.Message));
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, ApiResponse.Fail(ex.Message));
+            }
+        }
     }
 }

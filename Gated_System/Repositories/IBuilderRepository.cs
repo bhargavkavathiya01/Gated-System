@@ -15,5 +15,11 @@ namespace Gated_System.Repositories
         Task<IEnumerable<FlatOwnerRequestResponseModel>> GetAllFlatOwnerRequestsAsync(string? status = null);
         Task<bool> UpdateFlatOwnerRequestStatusAsync(int requestId, string status, int approvedBy, string? rejectionReason);
         Task<FlatOwnerRequestResponseModel?> GetFlatOwnerRequestByIdAsync(int requestId);
+
+        // Security approval flow
+        Task<int> CreateSecurityRequestAsync(CreateSecurityRequestModel model);
+        Task<IEnumerable<SecurityRequestResponseModel>> GetAllSecurityRequestsAsync(string? status = null);
+        Task<SecurityRequestResponseModel?> GetSecurityRequestByIdAsync(int requestId);
+        Task<bool> UpdateSecurityRequestStatusAsync(int requestId, string status, int approvedBy, string? rejectionReason);
     }
 }

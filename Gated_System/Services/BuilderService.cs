@@ -125,5 +125,35 @@ namespace Gated_System.Services
         {
             return await _repo.GetAllFlatOwnerRequestsAsync(status);
         }
+
+        public async Task<int> CreateSecurityRequestAsync(CreateSecurityRequestModel dto)
+        {
+            if (dto.PropertyId <= 0) throw new ApplicationException("Invalid PropertyId.");
+            if (dto.UserId <= 0)     throw new ApplicationException("Invalid UserId.");
+            if (dto.RoleId <= 0)     throw new ApplicationException("Invalid RoleId.");
+
+            return await _repo.CreateSecurityRequestAsync(dto);
+        }
+
+        public async Task<IEnumerable<SecurityRequestResponseModel>> GetAllSecurityRequestsAsync(string? status = null)
+        {
+            return await _repo.GetAllSecurityRequestsAsync(status);
+        }
+
+        public async Task<SecurityRequestResponseModel?> GetSecurityRequestByIdAsync(int requestId)
+        {
+            return await _repo.GetSecurityRequestByIdAsync(requestId);
+        }
+
+        public async Task<bool> ApproveSecurityRequestAsync(ApproveSecurityRequestModel dto, int approvedBy)
+        {
+            if (dto.RequestId <= 0) throw new ApplicationException("Invalid RequestId.");
+            if (dto.Action != "Approved" && dto.Action != "Rejected")
+                throw new ApplicationException("Action must be 'Approved' or 'Rejected'.");
+            if (dto.Action == "Rejected" && string.IsNullOrWhiteSpace(dto.RejectionReason))
+                throw new ApplicationException("RejectionReason is required when rejecting.");
+
+            return await _repo.UpdateSecurityRequestStatusAsync(dto.RequestId, dto.Action, approvedBy, dto.RejectionReason);
+        }
     }
 }

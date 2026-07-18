@@ -13,5 +13,11 @@ namespace Gated_System.Services
         Task<ServiceResult<PropertyMemberDetailsResponse>> GetMemberDetailsAsync(PropertyMemberRequest request);
         Task<int> CreateFlatOwnerRequestAsync(CreateFlatOwnerRequestModel dto);
         Task<IEnumerable<FlatOwnerRequestResponseModel>> GetAllFlatOwnerRequestsAsync(string? status = null);
+
+        // Security approval flow
+        Task<int> CreateSecurityRequestAsync(CreateSecurityRequestModel dto);
+        Task<IEnumerable<SecurityRequestResponseModel>> GetAllSecurityRequestsAsync(string? status = null);
+        Task<SecurityRequestResponseModel?> GetSecurityRequestByIdAsync(int requestId);
+        Task<bool> ApproveSecurityRequestAsync(ApproveSecurityRequestModel dto, int approvedBy);
     }
 }
