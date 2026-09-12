@@ -943,6 +943,81 @@ namespace Gated_System.Repositories
             finally { await _connection.CloseAsync(); }
         }
 
+        public async Task DeleteAccountAsync(int? targetUserId, string? user, int modifiedBy)
+        {
+            const string query = @"SELECT public.sp_api_usermaster(@p_operation, @p_json)::text;";
+
+            var payload = new
+            {
+                id = targetUserId,
+                user = user,
+                modifiedby = modifiedBy
+            };
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 6); // 6 = soft delete (deactivate)
+                cmd.Parameters.AddWithValue("p_json", jsonPayload);
+
+                var scalar = await cmd.ExecuteScalarAsync();
+                if (scalar is null || scalar is DBNull)
+                    throw new ApplicationException("sp_api_usermaster returned null for deletion.");
+
+                var resultJson = scalar.ToString();
+                using var doc = JsonDocument.Parse(resultJson!);
+                var root = doc.RootElement;
+
+                var statusCode = root.GetProperty("status_code").GetInt32();
+                if (statusCode == 200)
+                    return;
+
+                var message = root.TryGetProperty("message", out var m) ? m.GetString() : "Failed to delete account.";
+                throw new ApplicationException(message);
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
+        public async Task DeleteAccountByEmailAndPhoneAsync(string email, string phone)
+        {
+            const string query = @"SELECT public.sp_api_usermaster(@p_operation, @p_json)::text;";
+
+            var payload = new { email, phone };
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(query, _connection);
+                cmd.Parameters.AddWithValue("p_operation", 7); // 7 = soft delete by matching email + phone, no auth
+                cmd.Parameters.AddWithValue("p_json", jsonPayload);
+
+                var scalar = await cmd.ExecuteScalarAsync();
+                if (scalar is null || scalar is DBNull)
+                    throw new ApplicationException("sp_api_usermaster returned null for deletion.");
+
+                var resultJson = scalar.ToString();
+                using var doc = JsonDocument.Parse(resultJson!);
+                var root = doc.RootElement;
+
+                var statusCode = root.GetProperty("status_code").GetInt32();
+                if (statusCode == 200)
+                    return;
+
+                var message = root.TryGetProperty("message", out var m) ? m.GetString() : "Failed to delete account.";
+                throw new ApplicationException(message);
+            }
+            finally
+            {
+                await _connection.CloseAsync();
+            }
+        }
+
         public async Task<IEnumerable<RegisterTypeModel>> GetRegisterTypesAsync()
         {
             const string query = @"SELECT public.sp_api_registertypemaster(@p_operation, @p_json)::text;";
@@ -1023,6 +1098,21 @@ namespace Gated_System.Repositories
             {
                 await _connection.CloseAsync();
             }
+        }
+
+        public async Task<string> GetPropertyVerificationStatusAsync(int propertyId)
+        {
+            const string sql = "SELECT isverified FROM public.tblpropertymaster WHERE id = @id";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(sql, _connection);
+                cmd.Parameters.AddWithValue("id", propertyId);
+                var result = await cmd.ExecuteScalarAsync();
+                return result?.ToString() ?? "Pending";
+            }
+            finally { await _connection.CloseAsync(); }
         }
     }
 }

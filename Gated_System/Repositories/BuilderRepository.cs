@@ -869,5 +869,20 @@ namespace Gated_System.Repositories
                 await _connection.CloseAsync();
             }
         }
+
+        public async Task<string> GetPropertyVerificationStatusAsync(int propertyId)
+        {
+            const string sql = "SELECT isverified FROM public.tblpropertymaster WHERE id = @id";
+
+            await _connection.OpenAsync();
+            try
+            {
+                using var cmd = new NpgsqlCommand(sql, _connection);
+                cmd.Parameters.AddWithValue("id", propertyId);
+                var result = await cmd.ExecuteScalarAsync();
+                return result?.ToString() ?? "Pending";
+            }
+            finally { await _connection.CloseAsync(); }
+        }
     }
 }

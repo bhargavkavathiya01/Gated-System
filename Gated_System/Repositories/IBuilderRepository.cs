@@ -21,5 +21,7 @@ namespace Gated_System.Repositories
         Task<IEnumerable<SecurityRequestResponseModel>> GetAllSecurityRequestsAsync(string? status = null);
         Task<SecurityRequestResponseModel?> GetSecurityRequestByIdAsync(int requestId);
         Task<bool> UpdateSecurityRequestStatusAsync(int requestId, string status, int approvedBy, string? rejectionReason);
+
+        Task<string> GetPropertyVerificationStatusAsync(int propertyId);
     }
 }

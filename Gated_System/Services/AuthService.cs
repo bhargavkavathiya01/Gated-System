@@ -91,8 +91,16 @@ namespace Gated_System.Services
             if (secretaryType != null && user.UserRegistrationTypeId == secretaryType.Id)
             {
                 if (!roles.Any())
+                    return ServiceResult<AuthResponseModel>.Fail("Your account is not yet assigned to a society. Please contact your builder.");
+
+                var propertyId = roles.First().PropertyId;
+                if (propertyId > 0)
                 {
-                    return ServiceResult<AuthResponseModel>.Fail("Your society is pending admin approval. You can login once it is approved.");
+                    var verificationStatus = await _repo.GetPropertyVerificationStatusAsync(propertyId);
+                    if (verificationStatus == "Pending")
+                        return ServiceResult<AuthResponseModel>.Fail("Your society is pending admin approval. You can login once it is approved.");
+                    if (verificationStatus == "Rejected")
+                        return ServiceResult<AuthResponseModel>.Fail("Your society registration has been rejected. Please contact the admin.");
                 }
             }
 
@@ -306,6 +314,38 @@ namespace Gated_System.Services
         public async Task<IEnumerable<RegisterTypeModel>> GetRegisterTypesAsync()
         {
             return await _repo.GetRegisterTypesAsync();
+        }
+
+        public async Task<ServiceResult<bool>> DeleteAccountAsync(int? targetUserId, string? user, int actingUserId)
+        {
+            if ((targetUserId is null || targetUserId <= 0) && string.IsNullOrWhiteSpace(user))
+                return ServiceResult<bool>.Fail("Either a user id or an email/phone is required.");
+
+            try
+            {
+                await _repo.DeleteAccountAsync(targetUserId, user, actingUserId);
+                return ServiceResult<bool>.Success(true, "User account deleted successfully");
+            }
+            catch (ApplicationException ex)
+            {
+                return ServiceResult<bool>.Fail(ex.Message);
+            }
+        }
+
+        public async Task<ServiceResult<bool>> DeleteOwnAccountAsync(string email, string phone)
+        {
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(phone))
+                return ServiceResult<bool>.Fail("Email and phone are required.");
+
+            try
+            {
+                await _repo.DeleteAccountByEmailAndPhoneAsync(email.Trim(), phone.Trim());
+                return ServiceResult<bool>.Success(true, "User account deleted successfully");
+            }
+            catch (ApplicationException ex)
+            {
+                return ServiceResult<bool>.Fail(ex.Message);
+            }
         }
     }
 }

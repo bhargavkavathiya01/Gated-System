@@ -191,6 +191,58 @@ namespace Gated_System.Controllers
             });
         }
 
+        private bool IsAdminOrBuilder()
+        {
+            return User.Claims.Any(c =>
+                (c.Type == System.Security.Claims.ClaimTypes.Role || c.Type == "role") &&
+                (c.Value == "Admin" || c.Value == "Builder"));
+        }
+
+        private static IActionResult DeleteAccountErrorResult(string message)
+        {
+            if (message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+                return new NotFoundObjectResult(ApiResponse.Fail(message));
+            if (message.Contains("already deleted", StringComparison.OrdinalIgnoreCase))
+                return new ConflictObjectResult(ApiResponse.Fail(message));
+            return new BadRequestObjectResult(ApiResponse.Fail(message));
+        }
+
+        // Self-service: no token required. Deletes the account whose email AND phone
+        // both match the values supplied.
+        [HttpDelete("delete-account")]
+        public async Task<IActionResult> DeleteOwnAccount([FromBody] DeleteAccountRequestModel dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Email) || string.IsNullOrWhiteSpace(dto.Phone))
+                return BadRequest(ApiResponse.Fail("Email and phone are required."));
+
+            var result = await _auth.DeleteOwnAccountAsync(dto.Email, dto.Phone);
+            if (!result.status)
+                return DeleteAccountErrorResult(result.Message);
+
+            return Ok(ApiResponse.Success(result.Message));
+        }
+
+        // Admin/Builder: deactivate any account by email or phone.
+        [HttpDelete("admin/delete-account")]
+        public async Task<IActionResult> DeleteAccountByAdmin([FromBody] EmailOrPhoneModel dto)
+        {
+            var callerId = GetCurrentUserId();
+            if (callerId == -1)
+                return Unauthorized(ApiResponse.Fail("Invalid or expired token."));
+
+            if (!IsAdminOrBuilder())
+                return Forbid();
+
+            if (string.IsNullOrWhiteSpace(dto?.user))
+                return BadRequest(ApiResponse.Fail("Email or phone is required."));
+
+            var result = await _auth.DeleteAccountAsync(null, dto.user, callerId);
+            if (!result.status)
+                return DeleteAccountErrorResult(result.Message);
+
+            return Ok(ApiResponse.Success(result.Message));
+        }
+
         [HttpGet("getregisteredusertypes")]
         public async Task<IActionResult> GetRegisterTypes()
         {

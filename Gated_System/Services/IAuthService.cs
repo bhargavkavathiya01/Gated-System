@@ -11,5 +11,7 @@ namespace Gated_System.Services
         Task<int> CreatePropertyAsync(PropertyCreateModel property);
         Task<ServiceResult<bool>> ForgotPasswordAsync(ForgotPasswordRequest request);
         Task<IEnumerable<RegisterTypeModel>> GetRegisterTypesAsync();
+        Task<ServiceResult<bool>> DeleteAccountAsync(int? targetUserId, string? user, int actingUserId);
+        Task<ServiceResult<bool>> DeleteOwnAccountAsync(string email, string phone);
     }
 }

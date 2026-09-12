@@ -22,10 +22,15 @@ namespace Gated_System.Services
 
         public async Task<int> CreateSecretaryAsync(CreateSecretaryModel dto)
         {
-            // Basic validation
             if (dto.PropertyId <= 0) throw new ApplicationException("Invalid PropertyId.");
             if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
             if (dto.RoleId <= 0) throw new ApplicationException("Invalid RoleId.");
+
+            var status = await _repo.GetPropertyVerificationStatusAsync(dto.PropertyId);
+            if (status == "Pending")
+                throw new ApplicationException("Society is pending admin approval. Cannot assign roles until it is approved.");
+            if (status == "Rejected")
+                throw new ApplicationException("Society registration has been rejected. Cannot assign roles to a rejected society.");
 
             var id = await _repo.CreateSecretaryRepoAsync(dto);
             return id;
@@ -110,12 +115,17 @@ namespace Gated_System.Services
 
         public async Task<int> CreateFlatOwnerRequestAsync(CreateFlatOwnerRequestModel dto)
         {
-            // Basic validation
             if (dto.PropertyId <= 0) throw new ApplicationException("Invalid PropertyId.");
             if (dto.BuildingId <= 0) throw new ApplicationException("Invalid BuildingId.");
             if (dto.FlatNo == null) throw new ApplicationException("Invalid FlatNo.");
             if (dto.UserId <= 0) throw new ApplicationException("Invalid UserId.");
             if (dto.RoleId <= 0) throw new ApplicationException("Invalid RoleId.");
+
+            var status = await _repo.GetPropertyVerificationStatusAsync(dto.PropertyId);
+            if (status == "Pending")
+                throw new ApplicationException("Society is pending admin approval. Cannot submit requests until it is approved.");
+            if (status == "Rejected")
+                throw new ApplicationException("Society registration has been rejected. Cannot submit requests for a rejected society.");
 
             var id = await _repo.CreateFlatOwnerRequestAsync(dto);
             return id;

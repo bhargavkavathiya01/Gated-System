@@ -115,6 +115,12 @@ namespace Gated_System.Models
         public string user { get; set; } = "";
     }
 
+    public class DeleteAccountRequestModel
+    {
+        public string Email { get; set; } = "";
+        public string Phone { get; set; } = "";
+    }
+
     public class UserPropertyRole
     {
         public int RoleId { get; set; }          

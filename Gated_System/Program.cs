@@ -301,6 +301,7 @@ else
 FirebaseApp.Create(new AppOptions { Credential = firebaseCredential });
 
 // PostgreSQL
+
 var connectionString = builder.Configuration.GetConnectionString("Default")
     ?? throw new Exception("Missing connection string.");
 builder.Services.AddScoped(_ => new NpgsqlConnection(connectionString));
