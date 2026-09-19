@@ -7,7 +7,7 @@ namespace Gated_System.Repositories
         Task<bool> UpdateUserAsync(UserProfileUpdateModel user);
         Task<bool> UpdatePasswordAsync(UpdatePasswordModel model);
         Task<bool> UpdateFcmTokenAsync(UpdateFcmTokenModel model);
-        Task<string?> GetDeviceTokenAsync(int userId);
+        Task<DeviceTokenInfo?> GetDeviceTokenAsync(int userId);
         Task<IEnumerable<UserListResponseModel>> GetAllUsersAsync();
         Task<int> AddSosContactAsync(int userId, int contactUserId, string? relation);
         Task<IEnumerable<SosContactResponseModel>> GetSosContactsAsync(int userId);

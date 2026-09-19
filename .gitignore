@@ -8,6 +8,9 @@
 **/appsettings.json
 **/appsettings.Development.json
 **/firebase-service-account.json
+**/*.p12
+**/*.pfx
+**/*.pem
 
 # Build outputs
 **/bin/

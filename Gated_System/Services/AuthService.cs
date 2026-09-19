@@ -116,7 +116,8 @@ namespace Gated_System.Services
                 {
                     UserId = user.Id,
                     DeviceToken = dto.DeviceToken,
-                    Platform = dto.Platform
+                    Platform = dto.Platform,
+                    VoipToken = dto.VoipToken
                 };
                 try 
                 {

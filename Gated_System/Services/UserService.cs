@@ -166,6 +166,8 @@ namespace Gated_System.Services
             catch (Exception ex)            { return ServiceResult<bool>.Fail(ex.Message); }
         }
 
+        public Task<DeviceTokenInfo?> GetDeviceTokenAsync(int userId) => _userRepo.GetDeviceTokenAsync(userId);
+
         public async Task<ServiceResult<bool>> TriggerSosAsync(int userId)
         {
             try

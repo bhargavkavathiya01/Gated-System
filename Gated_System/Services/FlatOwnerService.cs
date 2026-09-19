@@ -390,7 +390,8 @@ namespace Gated_System.Services
             }
 
             // 3. Notify Security Guard
-            var guardToken = await _userRepo.GetDeviceTokenAsync(requestedBy);
+            var guardDevice = await _userRepo.GetDeviceTokenAsync(requestedBy);
+            var guardToken = guardDevice?.DeviceToken;
             if (!string.IsNullOrEmpty(guardToken))
             {
                 string title = isApproved ? "Visitor Approved" : "Visitor Rejected";

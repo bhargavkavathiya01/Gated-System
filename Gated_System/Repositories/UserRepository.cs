@@ -98,10 +98,16 @@ namespace Gated_System.Repositories
         public async Task<bool> UpdateFcmTokenAsync(UpdateFcmTokenModel model)
         {
             const string query = @"SELECT public.sp_api_usermaster(@p_operation, @p_json)::text;";
+            // DO UPDATE (not DO NOTHING): a returning user usually already has a row for
+            // this same device token, and DO NOTHING would silently discard a newly
+            // supplied voiptoken. A null voiptoken must not wipe out a stored one.
             const string insertTokenQuery = @"
-                INSERT INTO public.tbluserdevicetokens (userid, devicetoken, platform, createdon)
-                VALUES (@UserId, @DeviceToken, @Platform, CURRENT_TIMESTAMP)
-                ON CONFLICT (userid, devicetoken) DO NOTHING;";
+                INSERT INTO public.tbluserdevicetokens (userid, devicetoken, platform, voiptoken, isactive, createdon)
+                VALUES (@UserId, @DeviceToken, @Platform, @VoipToken, TRUE, CURRENT_TIMESTAMP)
+                ON CONFLICT (userid, devicetoken) DO UPDATE
+                    SET platform  = EXCLUDED.platform,
+                        voiptoken = COALESCE(EXCLUDED.voiptoken, public.tbluserdevicetokens.voiptoken),
+                        isactive  = TRUE;";
 
             var payload = new
             {
@@ -140,6 +146,8 @@ namespace Gated_System.Repositories
                     insertCmd.Parameters.AddWithValue("UserId", model.UserId);
                     insertCmd.Parameters.AddWithValue("DeviceToken", model.FcmToken);
                     insertCmd.Parameters.AddWithValue("Platform", string.IsNullOrWhiteSpace(model.Platform) ? "android" : model.Platform);
+                    insertCmd.Parameters.AddWithValue("VoipToken",
+                        string.IsNullOrWhiteSpace(model.VoipToken) ? DBNull.Value : model.VoipToken);
                     await insertCmd.ExecuteNonQueryAsync();
                 }
 
@@ -151,9 +159,14 @@ namespace Gated_System.Repositories
             }
         }
 
-        public async Task<string?> GetDeviceTokenAsync(int userId)
+        public async Task<DeviceTokenInfo?> GetDeviceTokenAsync(int userId)
         {
-            const string query = @"SELECT devicetoken FROM tbluserdevicetokens WHERE userid = @UserId ORDER BY id DESC LIMIT 1";
+            const string query = @"
+                SELECT devicetoken, platform, voiptoken
+                FROM tbluserdevicetokens
+                WHERE userid = @UserId
+                ORDER BY id DESC
+                LIMIT 1";
 
             await _connection.OpenAsync();
             try
@@ -161,9 +174,15 @@ namespace Gated_System.Repositories
                 using var cmd = new NpgsqlCommand(query, _connection);
                 cmd.Parameters.AddWithValue("UserId", userId);
 
-                var result = await cmd.ExecuteScalarAsync();
-                if (result == null || result == DBNull.Value) return null;
-                return result.ToString();
+                using var reader = await cmd.ExecuteReaderAsync();
+                if (!await reader.ReadAsync()) return null;
+
+                return new DeviceTokenInfo
+                {
+                    DeviceToken = reader.IsDBNull(0) ? "" : reader.GetString(0),
+                    Platform = reader.IsDBNull(1) ? "" : reader.GetString(1),
+                    VoipToken = reader.IsDBNull(2) ? null : reader.GetString(2)
+                };
             }
             finally { await _connection.CloseAsync(); }
         }

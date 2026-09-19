@@ -1,4 +1,5 @@
 ﻿using FirebaseAdmin.Messaging;
+using Gated_System.Helpers;
 using Gated_System.Models;
 using Gated_System.Services;
 using Microsoft.AspNetCore.Http;
@@ -12,11 +13,74 @@ namespace Gated_System.Controllers
     {
         private readonly IUserService _userService;
         private readonly IAwsS3Service _awsS3Service;
+        private readonly VoipPushHelper _voipHelper;
 
-        public UserController(IUserService userService, IAwsS3Service awsS3Service)
+        public UserController(IUserService userService, IAwsS3Service awsS3Service, VoipPushHelper voipHelper)
         {
             _userService = userService;
             _awsS3Service = awsS3Service;
+            _voipHelper = voipHelper;
+        }
+
+        // TEMPORARY diagnostic: reports whether the Apple VoIP certificate loaded.
+        // Remove once iOS calling is confirmed working.
+        [HttpGet("voip-status")]
+        public IActionResult VoipStatus()
+        {
+            if (GetCurrentUserId() == -1)
+                return Unauthorized(new { status = false, message = "Invalid or expired token" });
+
+            return Ok(new
+            {
+                status = true,
+                certificateLoaded = _voipHelper.IsConfigured,
+                sandbox = _voipHelper.UseSandbox,
+                detail = _voipHelper.Status,
+                lastSendResult = _voipHelper.LastSendResult
+            });
+        }
+
+        // TEMPORARY diagnostic: sends a VoIP push straight to the given user's stored
+        // VoIP token and returns Apple's actual answer. Remove once calling works.
+        [HttpPost("voip-test/{userId:int}")]
+        public async Task<IActionResult> VoipTest(int userId)
+        {
+            if (GetCurrentUserId() == -1)
+                return Unauthorized(new { status = false, message = "Invalid or expired token" });
+
+            var device = await _userService.GetDeviceTokenAsync(userId);
+            if (device == null)
+                return NotFound(new { status = false, message = $"No device row found for user {userId}" });
+
+            if (!device.HasVoipToken)
+                return BadRequest(new
+                {
+                    status = false,
+                    message = $"User {userId} has no VoIP token stored.",
+                    platform = device.Platform
+                });
+
+            var sent = await _voipHelper.SendCallAsync(
+                device.VoipToken!,
+                "Visitor Approval Request",
+                "Test Visitor",
+                "Visitor waiting for approval",
+                new Dictionary<string, string>
+                {
+                    { "visitorRequestId", "0" },
+                    { "action", "approve_reject" },
+                    { "type", "visitor_request" },
+                    { "notificationId", "1" }
+                });
+
+            return Ok(new
+            {
+                status = true,
+                accepted = sent,
+                platform = device.Platform,
+                isIos = device.IsIos,
+                appleResponse = _voipHelper.LastSendResult
+            });
         }
 
         private int GetCurrentUserId()

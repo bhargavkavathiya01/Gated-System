@@ -11,17 +11,20 @@ namespace Gated_System.Services
         private readonly IFlatOwnerRepository _flatOwnerRepo;
         private readonly IUserRepository _userRepo;
         private readonly PushNotificationHelper _pushHelper;
+        private readonly VoipPushHelper _voipHelper;
 
         public SecurityService(
             ISecurityRepository repo,
             IFlatOwnerRepository flatOwnerRepo,
             IUserRepository userRepo,
-            PushNotificationHelper pushHelper)
+            PushNotificationHelper pushHelper,
+            VoipPushHelper voipHelper)
         {
             _repo = repo;
             _flatOwnerRepo = flatOwnerRepo;
             _userRepo = userRepo;
             _pushHelper = pushHelper;
+            _voipHelper = voipHelper;
         }
 
         public async Task<object> VerifyQrAsync(VerifyQrRequest req,int SecurityId)
@@ -171,26 +174,52 @@ namespace Gated_System.Services
 
             // 2. Send Notification to specific Flat Owner (Directly)
             if (req.FlatOwnerId > 0)
-            {
-                var deviceToken = await _userRepo.GetDeviceTokenAsync(req.FlatOwnerId);
-                if (!string.IsNullOrEmpty(deviceToken))
-                {
-                    await _pushHelper.SendToDeviceAsync(
-                        deviceToken,
-                        $"{req.VisitorName} is waiting for your approval.",
-                        "Visitor Approval Request",
-                        new Dictionary<string, string>
-                        {
-                            { "visitorRequestId", insertedId.ToString() },
-                            { "action", "approve_reject" },
-                            { "type", "visitor_request" },
-                            { "notificationId", "1" }
-                        }
-                    );
-                }
-            }
+                await NotifyFlatOwnerOfVisitorAsync(req.FlatOwnerId, req.VisitorName, insertedId);
 
             return insertedId;
+        }
+
+        /// <summary>
+        /// Raises the "visitor waiting for approval" call on the flat owner's device.
+        /// iOS needs an Apple VoIP push to show the native CallKit screen when the app
+        /// is killed or locked - FCM cannot do that. Android keeps using FCM, and iOS
+        /// devices that never registered a VoIP token fall back to FCM too.
+        /// </summary>
+        private async Task NotifyFlatOwnerOfVisitorAsync(int flatOwnerId, string visitorName, int visitorRequestId)
+        {
+            var device = await _userRepo.GetDeviceTokenAsync(flatOwnerId);
+            if (device == null)
+                return;
+
+            var extra = new Dictionary<string, string>
+            {
+                { "visitorRequestId", visitorRequestId.ToString() },
+                { "action", "approve_reject" },
+                { "type", "visitor_request" },
+                { "notificationId", "1" }
+            };
+
+            if (device.IsIos && device.HasVoipToken)
+            {
+                var sent = await _voipHelper.SendCallAsync(
+                    device.VoipToken!,
+                    "Visitor Approval Request",
+                    visitorName,
+                    "Visitor waiting for approval",
+                    extra);
+
+                // Only fall back to a normal push if Apple rejected the VoIP one.
+                if (sent) return;
+            }
+
+            if (!string.IsNullOrEmpty(device.DeviceToken))
+            {
+                await _pushHelper.SendToDeviceAsync(
+                    device.DeviceToken,
+                    $"{visitorName} is waiting for your approval.",
+                    "Visitor Approval Request",
+                    extra);
+            }
         }
 
         public async Task<int> CreateEmergencyEntryAsync(EmergencyEntryRequest req, int securityId)

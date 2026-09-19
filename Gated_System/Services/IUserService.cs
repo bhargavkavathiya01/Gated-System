@@ -13,5 +13,6 @@ namespace Gated_System.Services
         Task<ServiceResult<bool>> RemoveSosContactAsync(int id, int userId);
         Task<ServiceResult<bool>> UpdateSosRelationAsync(int id, int userId, UpdateSosRelationModel dto);
         Task<ServiceResult<bool>> TriggerSosAsync(int userId);
+        Task<DeviceTokenInfo?> GetDeviceTokenAsync(int userId);
     }
 }

@@ -104,6 +104,7 @@ namespace Gated_System.Models
         public string Password { get; set; } = "";
         public string? DeviceToken { get; set; }
         public string? Platform { get; set; }
+        public string? VoipToken { get; set; }
     }
 
     public class RefreshTokenModel
@@ -162,6 +163,7 @@ namespace Gated_System.Models
         public string FcmToken { get; set; } = string.Empty;
         public int ModifiedBy { get; set; }
         public string Platform { get; set; } = "android";
+        public string? VoipToken { get; set; }
     }
 
     public class ForgotPasswordRequest
@@ -174,6 +176,21 @@ namespace Gated_System.Models
         public int UserId { get; set; }
         public string DeviceToken { get; set; } = string.Empty;
         public string Platform { get; set; } = string.Empty;
+        public string? VoipToken { get; set; }
+    }
+
+    /// <summary>
+    /// A user's latest registered device, including what platform it is and its
+    /// VoIP token (iOS only) so call notifications can be routed correctly.
+    /// </summary>
+    public class DeviceTokenInfo
+    {
+        public string DeviceToken { get; set; } = string.Empty;
+        public string Platform { get; set; } = string.Empty;
+        public string? VoipToken { get; set; }
+
+        public bool IsIos => Platform.Trim().Equals("ios", StringComparison.OrdinalIgnoreCase);
+        public bool HasVoipToken => !string.IsNullOrWhiteSpace(VoipToken);
     }
 
     public class PGMemberRequest

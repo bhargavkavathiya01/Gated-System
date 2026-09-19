@@ -16,6 +16,13 @@
     <Content Update="firebase-service-account.json">
       <CopyToPublishDirectory>Never</CopyToPublishDirectory>
     </Content>
+    <!-- Ships with the publish so IIS/MonsterASP hosting has the cert on disk.
+         It sits in the app root, not wwwroot, so it is never served to browsers.
+         The password is NOT in here - that comes from an env var / appsettings. -->
+    <Content Include="apns-voip-cert.p12">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>Always</CopyToPublishDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>
@@ -31,6 +38,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="AWSSDK.S3" Version="4.0.18.3" />
+		<PackageReference Include="dotAPNS" Version="4.6.0" />
 		<PackageReference Include="FirebaseAdmin" Version="3.4.0" />
 		<PackageReference Include="Google.Apis.Auth" Version="1.73.0" />
 		<PackageReference Include="MailKit" Version="4.14.1" />

@@ -1076,7 +1076,8 @@ namespace Gated_System.Repositories
             {
                 userid = model.UserId,
                 devicetoken = model.DeviceToken,
-                platform = model.Platform
+                platform = model.Platform,
+                voiptoken = model.VoipToken
             };
 
             var jsonPayload = JsonSerializer.Serialize(payload);
